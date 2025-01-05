@@ -9,6 +9,9 @@
 <a href="https://pypi.org/project/pdf2csv" target="_blank">
     <img src="https://img.shields.io/pypi/pyversions/pdf2csv.svg?color=%2334D058" alt="Supported Python versions">
 </a>
+<a href="https://codecov.io/gh/ghodsizadeh/pdf2csv" target="_blank">
+    <img src="https://codecov.io/gh/ghodsizadeh/pdf2csv/branch/main/graph/badge.svg" alt="codecov">
+</a>
 </p>
 This project provides a tool to convert tables from PDF files into CSV or XLSX format using the Docling library. It extracts tables from PDFs and saves them as CSV or XLSX files, optionally reversing text for right-to-left languages.
 
