@@ -25,7 +25,7 @@ This project provides a tool to convert tables from PDF files into CSV or XLSX f
 
 ## Dependencies
 
-This project heavily depends on the [Docling](https://github.com/docling/docling) library for PDF table extraction. Ensure you have it installed before running the converter.
+This project heavily depends on the [Docling](https://github.com/docling/docling) library for PDF table extraction.
 
 ## CLI Usage
 
@@ -73,5 +73,5 @@ for df in dfs:
 ```
 
 ## TODO:
-- [ ] Convert datatype to numeric
-- [ ]
+- [x] Convert datatype to numeric
+- [x] Support for XLSX output
