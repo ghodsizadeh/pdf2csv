@@ -9,7 +9,11 @@ dependencies = [
     "typer>=0.12.5",
 ]
 
+[project.scripts]
+pdf2csv = "pdf2csv.cli:main"
+
 [tool.uv]
 dev-dependencies = [
     "pytest>=8.3.4",
 ]
+package = true
