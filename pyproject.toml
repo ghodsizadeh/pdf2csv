@@ -12,6 +12,7 @@ license = { text = "MIT License" }
 keywords = [
     "pdf",
     "csv",
+    "excel",
     "pdf2csv",
     "data extraction",
     "docling",

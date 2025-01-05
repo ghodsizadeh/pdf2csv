@@ -10,7 +10,7 @@
     <img src="https://img.shields.io/pypi/pyversions/pdf2csv.svg?color=%2334D058" alt="Supported Python versions">
 </a>
 </p>
-This project provides a tool to convert tables from PDF files into CSV format using the Docling library. It extracts tables from PDFs and saves them as CSV files, optionally reversing text for right-to-left languages.
+This project provides a tool to convert tables from PDF files into CSV or XLSX format using the Docling library. It extracts tables from PDFs and saves them as CSV or XLSX files, optionally reversing text for right-to-left languages.
 
 ## How It Works
 
@@ -18,7 +18,7 @@ This project provides a tool to convert tables from PDF files into CSV format us
 2. **Table Extraction**: The tool uses Docling's `DocumentConverter` to extract tables from the PDF.
 3. **DataFrame Conversion**: Each extracted table is converted into a pandas DataFrame.
 4. **Optional Text Reversal**: If the `rtl` option is enabled, text in the DataFrame is reversed.
-5. **CSV Output**: The DataFrames are saved as CSV files in the specified output directory.
+5. **CSV/XLSX Output**: The DataFrames are saved as CSV or XLSX files in the specified output directory.
 
 ## Dependencies
 
@@ -26,31 +26,30 @@ This project heavily depends on the [Docling](https://github.com/docling/docling
 
 ## CLI Usage
 
-You can use the CLI tool to convert PDF files to CSV:
+You can use the CLI tool to convert PDF files to CSV or XLSX:
 
 ```sh
-pdf2csv convert-cli <pdf_path> --output-dir <output_dir> --rtl --verbose
+pdf2csv convert-cli <pdf_path> --output-dir <output_dir> --output-format <csv|xlsx> --rtl --verbose
 ```
 
 Example:
 
 ```sh
-pdf2csv convert-cli example.pdf --output-dir ./output --rtl --verbose
+pdf2csv convert-cli example.pdf --output-dir ./output --output-format xlsx --rtl --verbose
 ```
-
 
 ## With uvx
 
 You can use the CLI tool with `uvx`:
 
 ```sh
-uvx pdf2csv convert-cli <pdf_path> --output-dir <output_dir> --rtl --verbose
+uvx pdf2csv convert-cli <pdf_path> --output-dir <output_dir> --output-format <csv|xlsx> --rtl --verbose
 ```
 
 Example:
 
 ```sh
-uvx pdf2csv convert-cli example.pdf --output-dir ./output --rtl --verbose
+uvx pdf2csv convert-cli example.pdf --output-dir ./output --output-format xlsx --rtl --verbose
 ```
 
 ## Python Usage
@@ -63,8 +62,9 @@ from pdf2csv.converter import convert
 pdf_path = "example.pdf"
 output_dir = "./output"
 rtl = True
+output_format = "xlsx"
 
-dfs = convert(pdf_path, output_dir=output_dir, rtl=rtl)
+dfs = convert(pdf_path, output_dir=output_dir, rtl=rtl, output_format=output_format)
 for df in dfs:
     print(df)
 ```

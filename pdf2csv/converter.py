@@ -1,7 +1,7 @@
 import logging
 import time
 from pathlib import Path
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Literal  # Add Literal
 
 import pandas as pd
 from docling.document_converter import DocumentConverter
@@ -14,6 +14,7 @@ def convert(
     pdf_path: str,
     output_dir: Optional[str] = None,
     rtl: bool = False,
+    output_format: Literal['csv', 'xlsx'] = 'csv',  # Use Literal for type checking
     **kwargs: Any,
 ) -> List[pd.DataFrame]:
     """
@@ -21,23 +22,24 @@ def convert(
 
     The function extracts tables from the given PDF, optionally reversing text
     if the PDF is in a right-to-left language or if text is incorrectly extracted.
-    If `output_dir` is provided, it saves each extracted table to a CSV file.
+    If `output_dir` is provided, it saves each extracted table to a CSV or XLSX file.
 
     Parameters
     ----------
     pdf_path : str
         Path to the input PDF file.
     output_dir : Optional[str], optional
-        Directory where CSV files will be saved. If not provided, CSVs won't be saved.
+        Directory where CSV/XLSX files will be saved. If not provided, files won't be saved.
     rtl : bool, optional
         Whether to reverse text for right-to-left format (False). If True, text in cells
         (and column headers) will be reversed. Defaults to False.
+    output_format : str, optional
+        Format to save the output files. Options are 'csv' and 'xlsx'. Defaults to 'csv'.
     errors : str, optional
         How to handle errors during numeric conversion. Options are 'ignore', 'coerce', and 'raise'.
         Defaults to 'coerce'.
     **kwargs : Any
-        Additional arguments passed to `pd.DataFrame.to_csv(...)`, such as `index=False`,
-        `sep=';'`, etc.
+        Additional arguments passed to `pd.DataFrame.to_csv(...)` or `pd.DataFrame.to_excel(...)`.
 
     Returns
     -------
@@ -106,11 +108,18 @@ def convert(
             # Store DataFrame in the list
             dfs.append(df)
 
-            # Optionally save to CSV
+            # Optionally save to CSV or XLSX
             if output_dir_path is not None:
-                csv_filename = output_dir_path / f"{doc_filename}-table-{table_idx}.csv"
-                df.to_csv(csv_filename, **kwargs)
-                _log.info(f"Saved CSV table #{table_idx} to: {csv_filename}")
+                if output_format == 'csv':
+                    csv_filename = output_dir_path / f"{doc_filename}-table-{table_idx}.csv"
+                    df.to_csv(csv_filename, **kwargs)
+                    _log.info(f"Saved CSV table #{table_idx} to: {csv_filename}")
+                elif output_format == 'xlsx':
+                    xlsx_filename = output_dir_path / f"{doc_filename}-table-{table_idx}.xlsx"
+                    df.to_excel(xlsx_filename, **kwargs)
+                    _log.info(f"Saved XLSX table #{table_idx} to: {xlsx_filename}")
+                else:
+                    _log.error(f"Unsupported output format: {output_format}")
 
         except Exception as table_exc:
             _log.error(
