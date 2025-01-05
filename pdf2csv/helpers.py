@@ -1,6 +1,7 @@
 import pandas as pd
 
-def ensure_numeric_columns(df: pd.DataFrame, errors: str = 'coerce') -> pd.DataFrame:
+
+def ensure_numeric_columns(df: pd.DataFrame, errors: str = "coerce") -> pd.DataFrame:
     """
     Ensure all columns which are numbers are considered as numeric.
 
@@ -18,5 +19,5 @@ def ensure_numeric_columns(df: pd.DataFrame, errors: str = 'coerce') -> pd.DataF
         The processed DataFrame with numeric columns converted.
     """
     for col in df.columns:
-        df[col] = pd.to_numeric(df[col], errors='ignore')
+        df[col] = pd.to_numeric(df[col], errors="ignore")
     return df

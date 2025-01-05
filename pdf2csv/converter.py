@@ -14,7 +14,7 @@ def convert(
     pdf_path: str,
     output_dir: Optional[str] = None,
     rtl: bool = False,
-    output_format: Literal['csv', 'xlsx'] = 'csv',  # Use Literal for type checking
+    output_format: Literal["csv", "xlsx"] = "csv",  # Use Literal for type checking
     **kwargs: Any,
 ) -> List[pd.DataFrame]:
     """
@@ -110,12 +110,16 @@ def convert(
 
             # Optionally save to CSV or XLSX
             if output_dir_path is not None:
-                if output_format == 'csv':
-                    csv_filename = output_dir_path / f"{doc_filename}-table-{table_idx}.csv"
+                if output_format == "csv":
+                    csv_filename = (
+                        output_dir_path / f"{doc_filename}-table-{table_idx}.csv"
+                    )
                     df.to_csv(csv_filename, **kwargs)
                     _log.info(f"Saved CSV table #{table_idx} to: {csv_filename}")
-                elif output_format == 'xlsx':
-                    xlsx_filename = output_dir_path / f"{doc_filename}-table-{table_idx}.xlsx"
+                elif output_format == "xlsx":
+                    xlsx_filename = (
+                        output_dir_path / f"{doc_filename}-table-{table_idx}.xlsx"
+                    )
                     df.to_excel(xlsx_filename, **kwargs)
                     _log.info(f"Saved XLSX table #{table_idx} to: {xlsx_filename}")
                 else:
