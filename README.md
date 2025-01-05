@@ -24,6 +24,51 @@ This project provides a tool to convert tables from PDF files into CSV format us
 
 This project heavily depends on the [Docling](https://github.com/docling/docling) library for PDF table extraction. Ensure you have it installed before running the converter.
 
+## CLI Usage
+
+You can use the CLI tool to convert PDF files to CSV:
+
+```sh
+pdf2csv convert-cli <pdf_path> --output-dir <output_dir> --rtl --verbose
+```
+
+Example:
+
+```sh
+pdf2csv convert-cli example.pdf --output-dir ./output --rtl --verbose
+```
+
+
+## With uvx
+
+You can use the CLI tool with `uvx`:
+
+```sh
+uvx pdf2csv convert-cli <pdf_path> --output-dir <output_dir> --rtl --verbose
+```
+
+Example:
+
+```sh
+uvx pdf2csv convert-cli example.pdf --output-dir ./output --rtl --verbose
+```
+
+## Python Usage
+
+You can also use the converter directly in your Python code:
+
+```python
+from pdf2csv.converter import convert
+
+pdf_path = "example.pdf"
+output_dir = "./output"
+rtl = True
+
+dfs = convert(pdf_path, output_dir=output_dir, rtl=rtl)
+for df in dfs:
+    print(df)
+```
+
 ## TODO:
 - [ ] Convert datatype to numeric
 - [ ]
