@@ -2,13 +2,13 @@ from pdf2csv import convert
 import pytest
 
 @pytest.fixture
-def ltr_pdf():
-    return "tests/assets/ltr_test.pdf"
+def rtl_pdf():
+    return "tests/assets/rtl_test.pdf"
 
 
-def test_ltr_convert(ltr_pdf):
-    pdf_path = ltr_pdf
-    dfs = convert(pdf_path, ltr=False)
+def test_rtl_convert(rtl_pdf):
+    pdf_path = rtl_pdf
+    dfs = convert(pdf_path, rtl=True)
     assert len(dfs) == 1
     df = dfs[0]
     breakpoint()

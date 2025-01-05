@@ -13,11 +13,11 @@ def convert_cli(
     output_dir: Optional[str] = typer.Option(
         None, "--output-dir", "-o", help="Directory to save CSV files."
     ),
-    ltr: bool = typer.Option(
-        True, 
-        "--ltr/--no-ltr",
-        help="Whether to keep text in left-to-right format (default=True). "
-             "Use '--no-ltr' to reverse the text."
+    rtl: bool = typer.Option(
+        False, 
+        "--rtl/--no-rtl",
+        help="Whether to reverse text for right-to-left format (default=False). "
+             "Use '--rtl' to reverse the text."
     ),
     verbose: bool = typer.Option(
         False, 
@@ -35,10 +35,10 @@ def convert_cli(
     else:
         logging.basicConfig(level=logging.INFO)
 
-    logging.info(f"Starting conversion for {pdf_path}, ltr={ltr} ...")
+    logging.info(f"Starting conversion for {pdf_path}, rtl={rtl} ...")
 
     try:
-        dfs = convert(pdf_path, output_dir=output_dir, ltr=ltr, index=False)
+        dfs = convert(pdf_path, output_dir=output_dir, rtl=rtl, index=False)
         logging.info(f"Extracted {len(dfs)} table(s) from {pdf_path}.")
     except FileNotFoundError as fnf_err:
         logging.error(str(fnf_err))

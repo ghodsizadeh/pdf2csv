@@ -12,7 +12,7 @@ _log = logging.getLogger(__name__)
 def convert(
     pdf_path: str,
     output_dir: Optional[str] = None,
-    ltr: bool = True,
+    rtl: bool = False,
     **kwargs: Any,
 ) -> List[pd.DataFrame]:
     """
@@ -28,9 +28,9 @@ def convert(
         Path to the input PDF file.
     output_dir : Optional[str], optional
         Directory where CSV files will be saved. If not provided, CSVs won't be saved.
-    ltr : bool, optional
-        Whether to keep text in left-to-right format (True). If False, text in cells
-        (and column headers) will be reversed. Defaults to True.
+    rtl : bool, optional
+        Whether to reverse text for right-to-left format (False). If True, text in cells
+        (and column headers) will be reversed. Defaults to False.
     **kwargs : Any
         Additional arguments passed to `pd.DataFrame.to_csv(...)`, such as `index=False`,
         `sep=';'`, etc.
@@ -82,8 +82,8 @@ def convert(
         try:
             df: pd.DataFrame = table.export_to_dataframe()
 
-            # Reverse text if ltr=False
-            if not ltr:
+            # Reverse text if rtl=True
+            if rtl:
                 for col in df.select_dtypes(include=["object"]).columns:
                     df[col] = df[col].apply(
                         lambda x: x[::-1] if isinstance(x, str) else x
