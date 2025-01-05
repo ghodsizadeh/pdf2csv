@@ -25,9 +25,7 @@ jobs:
     - name: Run tests with coverage
       run: uv run pytest --cov=pdf2csv --cov-report=xml
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v2
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v5
       with:
-        files: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
+        token: ${{ secrets.CODECOV_TOKEN }}
