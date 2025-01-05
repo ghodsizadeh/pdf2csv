@@ -1,5 +1,15 @@
 # PDF to CSV Converter
 
+[![PyPI version](https://badge.fury.io/py/pdf2csv.svg)](https://pypi.org/project/pdf2csv/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+<!-- [![Downloads](https://pepy.tech/badge/pdf2csv)](https://pepy.tech/project/pdf2csv) -->
+<a href="https://pypi.org/project/pdf2csv" target="_blank">
+    <img src="https://img.shields.io/pypi/v/pdf2csv?color=%2334D058&label=pypi%20package" alt="Package version">
+</a>
+<a href="https://pypi.org/project/pdf2csv" target="_blank">
+    <img src="https://img.shields.io/pypi/pyversions/pdf2csv.svg?color=%2334D058" alt="Supported Python versions">
+</a>
+</p>
 This project provides a tool to convert tables from PDF files into CSV format using the Docling library. It extracts tables from PDFs and saves them as CSV files, optionally reversing text for right-to-left languages.
 
 ## How It Works
