@@ -5,6 +5,7 @@ from typing import List, Optional, Any
 
 import pandas as pd
 from docling.document_converter import DocumentConverter
+from .helpers import ensure_numeric_columns
 
 _log = logging.getLogger(__name__)
 
@@ -31,6 +32,9 @@ def convert(
     rtl : bool, optional
         Whether to reverse text for right-to-left format (False). If True, text in cells
         (and column headers) will be reversed. Defaults to False.
+    errors : str, optional
+        How to handle errors during numeric conversion. Options are 'ignore', 'coerce', and 'raise'.
+        Defaults to 'coerce'.
     **kwargs : Any
         Additional arguments passed to `pd.DataFrame.to_csv(...)`, such as `index=False`,
         `sep=';'`, etc.
@@ -81,6 +85,9 @@ def convert(
     for table_idx, table in enumerate(tables, start=1):
         try:
             df: pd.DataFrame = table.export_to_dataframe()
+
+            # Ensure numeric columns are considered as numeric
+            df = ensure_numeric_columns(df)
 
             # Reverse text if rtl=True
             if rtl:

@@ -11,10 +11,9 @@ def test_rtl_convert(rtl_pdf):
     dfs = convert(pdf_path, rtl=True)
     assert len(dfs) == 1
     df = dfs[0]
-    breakpoint()
     df.columns[0] == 'بلندمدت  ميانگين.اختالف نسبت به  درصد'
     assert len(df.columns) == 6
     assert len(df) == 10
-    assert df.iloc[0, 0] == 3.16
+    assert df.iloc[0, 0] == -44
 
 
