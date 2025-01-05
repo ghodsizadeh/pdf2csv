@@ -8,3 +8,8 @@ dependencies = [
     "docling>=2.14.0",
     "typer>=0.12.5",
 ]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.3.4",
+]
