@@ -11,7 +11,7 @@ app = typer.Typer(help="CLI tool for converting PDF tables to CSV using Docling.
 def convert_cli(
     pdf_path: str = typer.Argument(..., help="Path to the input PDF file."),
     output_dir: Optional[str] = typer.Option(
-        None, "--output-dir", "-o", help="Directory to save CSV files."
+        '.', "--output-dir", "-o", help="Directory to save CSV files."
     ),
     rtl: bool = typer.Option(
         False, 
