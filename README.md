@@ -15,7 +15,7 @@
     <img src="https://img.shields.io/github/stars/ghodsizadeh/pdf2csv" alt="Stars">
     <img src="https://img.shields.io/github/issues/ghodsizadeh/pdf2csv" alt="Issues">
     <!-- downloads -->
-    <!-- <img src="https://pepy.tech/badge/pdf2csv" alt="Downloads"> -->
+    <img src="https://pepy.tech/badge/pdf2csv" alt="Downloads">
 
 
 </p>
