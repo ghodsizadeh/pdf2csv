@@ -36,7 +36,17 @@ padding:40px">
 
 ## Dependencies
 
-This project heavily depends on the [Docling](https://github.com/docling/docling) library for PDF table extraction.
+This project heavily depends on the [Docling](https://github.com/DS4SD/docling) library for PDF table extraction, it will be installed automatically when you install this package.
+
+
+## Installation
+
+You can install the package from PyPI using pip:
+
+```sh
+pip install pdf2csv
+```
+
 
 ## CLI Usage
 
