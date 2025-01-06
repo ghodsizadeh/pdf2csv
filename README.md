@@ -20,7 +20,11 @@
 
 </p>
 
-This project provides a tool to convert tables from PDF files into CSV or XLSX format using the Docling library. It extracts tables from PDFs and saves them as CSV or XLSX files, optionally reversing text for right-to-left languages.
+<img src='./docs/logo.webp' style="display: block; margin: auto; width: 400px; height: auto; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); border-radius: 35px;
+padding:40px">
+
+
+ This project provides a tool to convert tables from PDF files into CSV or XLSX format using the Docling library. It extracts tables from PDFs and saves them as CSV or XLSX files, optionally reversing text for right-to-left languages.
 
 ## How It Works
 
