@@ -62,12 +62,12 @@ def convert_cli(
             index=False,
         )
         logging.info("Extracted %s table(s) from %s.", len(frames), pdf_path)
-    except FileNotFoundError as fnf_err:
-        logging.error("%s", fnf_err)
-    except Pdf2CsvError as err:
+    except (FileNotFoundError, Pdf2CsvError) as err:
         logging.error("%s", err)
+        raise typer.Exit(code=1) from err
     except Exception as exc:
         logging.error("Error during PDF conversion: %s", exc, exc_info=True)
+        raise typer.Exit(code=1) from exc
 
 
 def main():
