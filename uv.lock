@@ -579,6 +579,7 @@ name = "pdf2csv"
 version = "0.3.0"
 source = { editable = "." }
 dependencies = [
+    { name = "click" },
     { name = "openpyxl" },
     { name = "pandas" },
     { name = "pdfplumber" },
@@ -600,6 +601,7 @@ examples = [
 
 [package.metadata]
 requires-dist = [
+    { name = "click", specifier = ">=8.1.8" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pandas", specifier = ">=2.2.0" },
     { name = "pdfplumber", specifier = ">=0.11.7" },
