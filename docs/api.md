@@ -112,7 +112,7 @@ frames = convert(
 )
 
 # Or export already extracted frames without reading the PDF again:
-paths = export_frames(frames, "report.pdf", "output", overwrite=False, index=False)
+paths = export_frames(frames, "report.pdf", "reviewed-output", overwrite=False, index=False)
 ```
 
 `convert()` accepts the same extraction options as `extract_document()`, except
