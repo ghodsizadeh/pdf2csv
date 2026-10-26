@@ -1,0 +1,22 @@
+"""Smoke tests for the installed package, not just the locked environment."""
+
+from importlib.metadata import requires
+import subprocess
+import sys
+
+from packaging.requirements import Requirement
+
+
+def test_click_is_a_direct_runtime_dependency():
+    dependencies = {Requirement(item).name for item in requires("pdf2csv")}
+    assert "click" in dependencies
+
+
+def test_installed_cli_starts():
+    result = subprocess.run(
+        [sys.executable, "-m", "pdf2csv.cli", "--help"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "convert-cli" in result.stdout
