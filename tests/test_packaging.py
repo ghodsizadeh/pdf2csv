@@ -9,8 +9,7 @@ from packaging.requirements import Requirement
 
 def test_imported_libraries_are_direct_dependencies():
     dependencies = {Requirement(item).name for item in requires("pdf2csv")}
-    assert {"openpyxl", "pandas", "pdfplumber", "typer"} <= dependencies
-    assert "click" not in dependencies
+    assert {"click", "openpyxl", "pandas", "pdfplumber", "typer"} <= dependencies
 
 
 def test_installed_cli_starts():
