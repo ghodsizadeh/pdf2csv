@@ -18,6 +18,7 @@ EXAMPLES = Path(__file__).parents[1] / "examples"
         "english_close_stacked",
         "english_side_by_side",
         "english_mixed_stacked",
+        "english_mixed_reverse",
         "english_mixed_side_by_side",
         "english_borderless_stacked",
     ],
@@ -28,6 +29,25 @@ def test_disconnected_tables_stay_separate(name):
     for number, frame in enumerate(frames, 1):
         expected = pd.DataFrame({f"Name {number}": ["Ada", "Grace"], "Score": [10, 12]})
         pd.testing.assert_frame_equal(frame, expected)
+
+
+@pytest.mark.parametrize(
+    "name,headers",
+    [("english_pages", ["Name 1", "Name 2"]), ("farsi_pages", ["شهر اول", "شهر دوم"])],
+)
+@pytest.mark.parametrize("output_format", ["csv", "xlsx"])
+def test_page_order_and_output_file_numbering(name, headers, output_format, tmp_path):
+    frames = convert(
+        EXAMPLES / f"{name}.pdf",
+        output_dir=tmp_path,
+        output_format=output_format,
+        index=False,
+    )
+    assert [frame.columns[0] for frame in frames] == headers
+    for number, frame in enumerate(frames, 1):
+        path = tmp_path / f"{name}-table-{number}.{output_format}"
+        saved = pd.read_csv(path) if output_format == "csv" else pd.read_excel(path)
+        pd.testing.assert_frame_equal(saved, frame)
 
 
 def test_rectangle_borders_form_a_table():

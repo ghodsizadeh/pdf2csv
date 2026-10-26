@@ -108,12 +108,13 @@ def extract_tables(
                 f"PDF has {page_count} pages, which exceeds the limit of {max_pages}"
             )
 
-        tables: list[tuple[tuple[float, float, float, float], list[list[str]]]] = []
+        tables: list[list[list[str]]] = []
         for page in pdf.pages:
-            tables.extend(_tables_on_page(page, rtl=rtl))
+            page_tables = _tables_on_page(page, rtl=rtl)
+            page_tables.sort(key=lambda item: (item[0][1], item[0][0]))
+            tables.extend(rows for _, rows in page_tables)
 
-    tables.sort(key=lambda item: (item[0][1], item[0][0]))
-    return [rows for _, rows in tables]
+    return tables
 
 
 def _tables_on_page(
