@@ -39,6 +39,9 @@ _TEXT_SETTINGS = {
     "intersection_tolerance": SNAP,
     "min_words_vertical": 2,
     "min_words_horizontal": 1,
+    # Keep a cell's explicit spaces within one word. Otherwise aligned RTL
+    # phrases can introduce a false column boundary through their digits.
+    "text_keep_blank_chars": True,
 }
 
 
@@ -123,9 +126,51 @@ def _tables_on_page(
         bbox, rows = _render_grid(page, grid, rtl)
         if rows:
             rendered.append((bbox, rows))
-    if rendered:
-        return rendered
+    ruled_boxes = [bbox for bbox, _ in rendered]
+    for region in _text_regions(page, ruled_boxes):
+        rendered.extend(_borderless_tables(region, rtl=rtl))
+    return rendered
 
+
+def _text_regions(page, ruled_boxes):
+    """Find text bands outside ruled tables, without bridging large row gaps."""
+
+    def outside_tables(obj):
+        if obj.get("object_type") != "char":
+            return True
+        x = (obj["x0"] + obj["x1"]) / 2
+        y = (obj["top"] + obj["bottom"]) / 2
+        return not any(
+            x0 - SNAP <= x <= x1 + SNAP and y0 - SNAP <= y <= y1 + SNAP
+            for x0, y0, x1, y1 in ruled_boxes
+        )
+
+    remaining = page.filter(outside_tables)
+    if not remaining.chars:
+        return
+    spans: list[list[float]] = []
+    for char in sorted(remaining.chars, key=lambda char: char["top"]):
+        if spans and char["top"] <= spans[-1][1] + 2:
+            spans[-1][1] = max(spans[-1][1], char["bottom"])
+        else:
+            spans.append([char["top"], char["bottom"]])
+    gaps = [bottom[0] - top[1] for top, bottom in zip(spans, spans[1:])]
+    threshold = max(
+        3 * _median(char["size"] for char in remaining.chars),
+        1.8 * _median(gaps) if gaps else 0,
+    )
+    start, end = spans[0]
+    x0, y0, x1, y1 = page.bbox
+    for top, bottom in spans[1:]:
+        if top - end > threshold:
+            yield remaining.crop((x0, max(y0, start - 1), x1, min(y1, end + 1)))
+            start = top
+        end = bottom
+    yield remaining.crop((x0, max(y0, start - 1), x1, min(y1, end + 1)))
+
+
+def _borderless_tables(page, *, rtl: bool):
+    rendered = []
     for table in page.find_tables(_TEXT_SETTINGS):
         rows: list[list[str]] = []
         for row in table.rows:

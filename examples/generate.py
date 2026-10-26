@@ -60,6 +60,12 @@ def english_examples():
         "english_close_stacked.pdf": [{"top": 80}, {"top": 205}],
         "english_side_by_side.pdf": [{"left": 40}, {"left": 340}],
         "english_rectangles.pdf": [{"rectangles": True}],
+        "english_mixed_stacked.pdf": [{"top": 80}, {"top": 350, "ruled": False}],
+        "english_mixed_side_by_side.pdf": [{"left": 40}, {"left": 340, "ruled": False}],
+        "english_borderless_stacked.pdf": [
+            {"top": 80, "ruled": False},
+            {"top": 350, "ruled": False},
+        ],
     }
     for filename, positions in layouts.items():
         pdf = canvas.Canvas(str(ROOT / filename), pagesize=PAGE_SIZE, invariant=1)
@@ -83,6 +89,10 @@ def farsi_examples():
         pdf = canvas.Canvas(str(ROOT / filename), pagesize=PAGE_SIZE, invariant=1)
         draw_table(pdf, rows, ruled=ruled)
         pdf.save()
+    pdf = canvas.Canvas(str(ROOT / "farsi_mixed.pdf"), pagesize=PAGE_SIZE, invariant=1)
+    draw_table(pdf, rows)
+    draw_table(pdf, rows, top=350, ruled=False)
+    pdf.save()
 
 
 if __name__ == "__main__":
