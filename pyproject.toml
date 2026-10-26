@@ -8,7 +8,7 @@ dependencies = [
     "click>=8.1.8",
     "openpyxl>=3.1.5",
     "pandas>=2.2.0",
-    "pdfplumber>=0.11.0",
+    "pdfplumber>=0.11.7",
     "typer>=0.12.5",
 ]
 license = { text = "MIT License" }
