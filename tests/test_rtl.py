@@ -25,6 +25,17 @@ def test_ltr_phrase_in_an_rtl_line():
 def test_parentheses_around_numbers_and_rtl_words():
     assert _logical_tokens(list("(۱۲۳) مالس"), False) == "سلام (۱۲۳)"
     assert _logical_tokens(list("(مالس)"), False) == "(سلام)"
+    # Existing PDFs may already map mirrored brackets to logical code points.
+    assert _logical_tokens(list(")مالس("), False) == "(سلام)"
+
+
+def test_existing_farsi_pdf_keeps_logical_parentheses():
+    frame = convert(EXAMPLES.parent / "tests/assets/rtl_test.pdf", rtl=True)[0]
+    assert list(frame.columns)[2:5] == [
+        "ارتفاع بارندگی (ميليمتر) ميانگين بلند مدت",
+        "ارتفاع بارندگی (ميليمتر) سال آبی گذشته",
+        "ارتفاع بارندگی (ميليمتر) سال آبی جاری",
+    ]
 
 
 def test_ligature_is_not_reversed_inside_its_glyph():
