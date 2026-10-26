@@ -37,8 +37,8 @@ def convert_cli(
     rtl: bool = typer.Option(
         False,
         "--rtl/--no-rtl",
-        help="Treat a mixed cell as right-to-left when it contains any Arabic or Hebrew. "
-        "Those scripts are already detected when they are the majority.",
+        help="Prefer right-to-left interpretation for mixed Arabic or Hebrew text. "
+        "Detection is automatic; Latin text at both ends still anchors an LTR paragraph.",
     ),
     output_format: OutputFormat = typer.Option(
         OutputFormat.csv,

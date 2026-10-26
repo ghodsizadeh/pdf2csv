@@ -21,6 +21,7 @@ EXAMPLES = Path(__file__).parents[1] / "examples"
         "english_mixed_reverse",
         "english_mixed_side_by_side",
         "english_borderless_stacked",
+        "english_borderless_side_by_side",
     ],
 )
 def test_disconnected_tables_stay_separate(name):
@@ -60,3 +61,20 @@ def test_rectangle_borders_form_a_table():
 def test_collinear_segments_join_only_when_their_endpoints_touch():
     rules = _cluster([(40, 10, 30), (41, 30, 60), (40, 100, 120)])
     assert [(rule.start, rule.end) for rule in rules] == [(10, 60), (100, 120)]
+
+
+@pytest.mark.parametrize(
+    "name", ["english_borderless_four_columns", "english_borderless_wide_middle"]
+)
+def test_borderless_columns_with_ordinary_or_wider_gutters_stay_together(name):
+    frames = convert(EXAMPLES / f"{name}.pdf")
+    assert len(frames) == 1
+    expected = pd.DataFrame(
+        {
+            "Name": ["Ada", "Grace"],
+            "Score": [10, 12],
+            "Team": ["Blue", "Green"],
+            "Rank": [1, 2],
+        }
+    )
+    pd.testing.assert_frame_equal(frames[0], expected)

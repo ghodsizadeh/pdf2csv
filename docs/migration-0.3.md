@@ -11,12 +11,12 @@ not a drop-in replacement for every document Docling can process.
 | Python | Requires 3.12+; Python 3.10 and 3.11 are no longer supported. CI covers 3.12–3.14. |
 | OCR | No OCR or layout-model downloads. Scanned/image-only tables are not supported. |
 | PDF input | Local, nonempty files with a `.pdf` extension; encrypted PDFs are rejected even if they open without a password. |
-| Limits | Defaults to 50 MiB and 100 pages. The Python API can override these limits. |
-| Headers | The first detected row becomes column names. Blank names become `column_1`, etc. Headerless tables need downstream adjustment. |
-| RTL | Arabic/Farsi/Hebrew detection is automatic. `rtl=True` forces RTL interpretation in mixed text; it no longer blindly reverses all strings. Digits remain in their written order. |
+| Limits | Defaults to 50 MiB and 100 pages. Override with Python's `max_bytes`/`max_pages` or the CLI's `--max-bytes`/`--max-pages`. |
+| Headers | The first detected row becomes column names. Blank names become `column_1`, etc. Use `extract_document(header=None)` or `convert(table_header=None)` for headerless tables. |
+| RTL | Arabic/Farsi/Hebrew detection is automatic. `rtl=True` prefers RTL interpretation in mixed text; Latin text at both ends still anchors an LTR paragraph. Latin identifiers and digit runs retain their written order. |
 | Column order | Physical left-to-right page order, even in Farsi documents. |
 | Table order | Page order, then top-to-bottom/left-to-right on each page. Each table is independent; continued tables are not stitched. |
-| Numeric cleanup | A column becomes numeric only when all nonempty cells are numbers. Persian and Arabic-Indic digits are accepted; mixed text remains text. |
+| Numeric cleanup | A column becomes numeric only when all nonempty cells are numbers. Persian and Arabic-Indic digits are accepted; mixed text remains text. Use `numeric="preserve"` to keep strings or explicit `dtypes` to protect identifiers. |
 | Errors | Invalid inputs raise `Pdf2CsvError` (missing paths raise `FileNotFoundError`). Export failures propagate rather than being silently swallowed. |
 | CLI errors | Conversion/write errors exit `1`; argument errors exit `2`. No detected tables is a successful empty result unless `--fail-on-empty` is set. |
 
@@ -60,6 +60,9 @@ and `convert-cli` remains an alias. See the [CLI guide](cli.md).
 - Text alignment is heuristic and may confuse aligned prose with tables.
 - Rotated text, arbitrary merged body cells, unusual font mappings, complex
   bidirectional nesting and irregular/broken grids are not universally supported.
+- Different logical bidirectional strings can paint identical glyphs, so their
+  original word/number order cannot always be recovered. Borderless gutter
+  splitting is conservative and cannot distinguish every neighboring table.
 - Empty rows/columns are trimmed; a detected table needs at least two nonempty
   columns and a body row.
 - Numeric-looking identifiers (for example zero-padded account numbers) may become
