@@ -30,13 +30,13 @@ Python 3.12 or newer is required.
 
 ## How It Works
 
-1. **PDF Input**: Provide the path to a born-digital PDF. The file must be an unencrypted `.pdf`, at most 50 MB, and at most 100 pages.
-2. **Table Extraction**: Ruled lines are snapped into a grid. A page with no ruling falls back to text alignment.
+1. **PDF Input**: Provide the path to a born-digital PDF. By default the file must be an unencrypted `.pdf`, at most 50 MiB, and at most 100 pages.
+2. **Table Extraction**: Connected ruled lines are snapped into separate grids. Text alignment finds borderless tables outside those grids, including on mixed pages.
 3. **DataFrame Conversion**: The first row of each table becomes the column names. A column becomes numeric only when every non-empty cell is a number.
 4. **Right-to-left text**: Arabic and Hebrew glyphs are put back into reading order. Digits are left as written. `--rtl` forces that glyph order; columns stay in left-to-right page order.
-5. **CSV/XLSX Output**: Each table is saved in the output directory.
+5. **CSV/XLSX Output**: Each table is saved in page order, then top-to-bottom and left-to-right within the page. Files are named `<pdf-stem>-table-1.csv` (or `.xlsx`), and so on. Tables on different pages are not automatically stitched together.
 
-Scanned pages and other image-only PDFs are not supported. Those files have no text glyphs to read.
+Scanned pages and other image-only PDFs are not supported. Those files have no text glyphs to read. See [migration notes and limitations](docs/migration-0.3.md) before upgrading from the Docling-based version.
 
 ## Installation
 
@@ -44,6 +44,14 @@ Requires Python 3.12+.
 
 ```sh
 pip install pdf2csv
+```
+
+To use this branch before its release to PyPI, install the checkout instead:
+
+```sh
+pip install .
+# Or use the locked development environment:
+uv sync --locked
 ```
 
 ## CLI Usage
@@ -80,11 +88,39 @@ output_dir = "./output"
 rtl = True
 output_format = "xlsx"
 
-dfs = convert(pdf_path, output_dir=output_dir, rtl=rtl, output_format=output_format)
+dfs = convert(pdf_path, output_dir=output_dir, rtl=rtl, output_format=output_format, index=False)
 for df in dfs:
     print(df)
 ```
 
-## TODO:
-- [x] Convert datatype to numeric
-- [x] Support for XLSX output
+## English and Farsi examples
+
+The repository includes [13 generated example PDFs](examples/README.md), including
+shaped Farsi with embedded fonts, mixed digit scripts, multiple tables and pages:
+
+```sh
+uv run --locked pdf2csv convert-cli examples/english_pages.pdf -o /tmp/pdf2csv-english
+uv run --locked pdf2csv convert-cli examples/farsi_ruled.pdf -o /tmp/pdf2csv-farsi -f xlsx
+```
+
+Arabic/Farsi detection is automatic; `--no-rtl` does not turn it off. `--rtl`
+forces the RTL interpretation when a cell mixes mostly Latin text with RTL text.
+Columns always stay in physical left-to-right page order.
+
+## Development and verification
+
+```sh
+uv sync --locked
+uv run --locked pytest
+uv run --locked ruff check .
+uv run --locked ruff format --check .
+uv run --locked --group examples python examples/generate.py
+```
+
+CI tests Python 3.12–3.14, minimum/latest dependency installations and reproducible
+PDF generation. See [the measured Docling comparison](benchmarks/README.md) for
+methodology, raw results and limitations; the small regression corpus is not a
+general-purpose PDF accuracy guarantee.
+
+The CLI exits with `0` on success (including no tables), `1` on conversion or
+write errors, and `2` for invalid command-line arguments.
