@@ -57,25 +57,29 @@ uv sync --locked
 ## CLI Usage
 
 ```sh
-pdf2csv convert-cli <pdf_path> --output-dir <output_dir> --output-format <csv|xlsx> --rtl --verbose
+pdf2csv convert <pdf_path> --output-dir <output_dir> --output-format <csv|xlsx> --rtl --verbose
 ```
 
 Example:
 
 ```sh
-pdf2csv convert-cli example.pdf --output-dir ./output --output-format xlsx --rtl --verbose
+pdf2csv convert example.pdf --output-dir ./output --output-format xlsx --rtl --verbose
 ```
+
+`convert-cli` remains available as an alias for existing scripts. Output files are
+protected by default; use `--overwrite` to replace them. See the [CLI guide](docs/cli.md)
+for input limits and `--fail-on-empty`.
 
 ## With uvx
 
 ```sh
-uvx pdf2csv convert-cli <pdf_path> --output-dir <output_dir> --output-format <csv|xlsx> --rtl --verbose
+uvx pdf2csv convert <pdf_path> --output-dir <output_dir> --output-format <csv|xlsx> --rtl --verbose
 ```
 
 Example:
 
 ```sh
-uvx pdf2csv convert-cli example.pdf --output-dir ./output --output-format xlsx --rtl --verbose
+uvx pdf2csv convert example.pdf --output-dir ./output --output-format xlsx --rtl --verbose
 ```
 
 ## Python Usage
@@ -102,8 +106,8 @@ The repository includes [13 generated example PDFs](examples/README.md), includi
 shaped Farsi with embedded fonts, mixed digit scripts, multiple tables and pages:
 
 ```sh
-uv run --locked pdf2csv convert-cli examples/english_pages.pdf -o /tmp/pdf2csv-english
-uv run --locked pdf2csv convert-cli examples/farsi_ruled.pdf -o /tmp/pdf2csv-farsi -f xlsx
+uv run --locked pdf2csv convert examples/english_pages.pdf -o /tmp/pdf2csv-english
+uv run --locked pdf2csv convert examples/farsi_ruled.pdf -o /tmp/pdf2csv-farsi -f xlsx
 ```
 
 Arabic/Farsi detection is automatic; `--no-rtl` does not turn it off. `--rtl`
@@ -125,5 +129,6 @@ PDF generation. See [the measured Docling comparison](benchmarks/README.md) for
 methodology, raw results and limitations; the small regression corpus is not a
 general-purpose PDF accuracy guarantee.
 
-The CLI exits with `0` on success (including no tables), `1` on conversion or
-write errors, and `2` for invalid command-line arguments.
+The CLI exits with `0` on success (including no tables by default), `1` on
+conversion/write errors or empty results with `--fail-on-empty`, and `2` for
+invalid command-line arguments.
