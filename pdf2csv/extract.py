@@ -504,13 +504,34 @@ def _logical_tokens(tokens: list[str], force_rtl: bool) -> str:
             stop -= 1
         if any(kinds[pos] == "ltr" for pos in range(start, stop)):
             flipped[start:stop] = flipped[start:stop][::-1]
-        else:
-            mirrors = str.maketrans("()[]{}<>", ")(][}{><")
-            flipped[start:stop] = [
-                token.translate(mirrors) for token in flipped[start:stop]
-            ]
         index = end
-    return "".join(flipped)
+    return _balanced_brackets("".join(flipped))
+
+
+def _balanced_brackets(text: str) -> str:
+    """Orient reversed enclosure pairs, retaining already-logical PDF glyphs.
+
+    PDF ToUnicode maps sometimes encode a visually mirrored bracket as its
+    logical counterpart already. Blindly mirroring every bracket corrupts
+    those files, so change only pairs whose closing bracket precedes opening.
+    """
+    chars = list(text)
+    for opening, closing in [("(", ")"), ("[", "]"), ("{", "}")]:
+        depth = 0
+        pending = []
+        for index, char in enumerate(chars):
+            if char == opening:
+                if pending:
+                    other = pending.pop()
+                    chars[other], chars[index] = opening, closing
+                else:
+                    depth += 1
+            elif char == closing:
+                if depth:
+                    depth -= 1
+                else:
+                    pending.append(index)
+    return "".join(chars)
 
 
 def _token_kind(token: str) -> str:
