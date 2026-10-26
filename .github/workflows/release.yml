@@ -1,0 +1,94 @@
+name: Release package
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'release' }}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.12', '3.13', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync --locked
+      - name: Validate versions and release metadata
+        run: uv run --no-sync python scripts/check_release.py
+      - name: Require release commit to belong to main
+        if: github.event_name == 'release'
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor HEAD origin/main
+      - run: uv run --no-sync pytest -q
+      - name: Check lint, formatting and reproducible fixtures
+        if: matrix.python == '3.12'
+        run: |
+          uv run --no-sync ruff check .
+          uv run --no-sync ruff format --check .
+          uv run --locked --group examples python examples/generate.py
+          git diff --exit-code -- examples/
+
+  dependencies:
+    if: github.event_name == 'release'
+    uses: ./.github/workflows/dependencies.yml
+
+  build:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Build wheel and source distribution
+        run: uv build --no-sources
+      - name: Validate distribution metadata
+        run: uvx twine check --strict dist/*
+      - name: Install and smoke-test the wheel in isolation
+        run: |
+          uv venv .wheel-venv --python 3.12
+          uv pip install --python .wheel-venv/bin/python dist/*.whl
+          uv pip check --python .wheel-venv/bin/python
+          .wheel-venv/bin/python -I scripts/smoke_wheel.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distributions
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    if: github.event_name == 'release'
+    needs: [build, dependencies]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/pdf2csv/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: distributions
+          path: dist/
+      - name: Publish checked distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1
