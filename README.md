@@ -61,6 +61,51 @@ pip install .
 uv sync --locked
 ```
 
+## AI agent skills (Library Skills)
+
+pdf2csv bundles version-matched instructions for coding agents using
+[Library Skills](https://library-skills.io/). The skill covers the CLI, Python
+API, safe CSV/XLSX exports, RTL text, and extraction limitations. It ships in
+the Python package; installing pdf2csv does **not** automatically configure your
+agent or run an installer.
+
+In your consuming project's directory, add pdf2csv to its dependencies and install
+it into the project's environment before discovering skills:
+
+```sh
+uv add pdf2csv
+uvx library-skills
+```
+
+Select the **pdf2csv** skill and `.agents/skills` when prompted. For Claude Code,
+select `.claude/skills` instead, or run `uvx library-skills --claude`.
+Library Skills normally links to the installed package so instructions stay in
+sync with upgrades. Use `--copy` if symlinks are unavailable; refresh copied
+skills after upgrading. Re-run the command to repair links after environment changes.
+
+For pip-based projects, declare pdf2csv in `pyproject.toml` and install it in a
+project-local `.venv`; then run `uvx library-skills` (or
+`pip install library-skills` followed by `library-skills`).
+Library Skills is an optional setup tool, not a pdf2csv runtime dependency.
+An isolated `uvx pdf2csv` invocation alone does not install pdf2csv in your
+project's environment for skill discovery.
+
+**Before this change is published**, install this checkout into your consuming
+project's environment instead of expecting the skill in an older PyPI release.
+You can inspect discovery without installing links with
+`uvx library-skills scan --json`.
+
+**For agents:** load the installed `pdf2csv/SKILL.md` from your configured skills
+directory before writing extraction code. If your agent does not discover those
+directories, explicitly provide the bundled file at
+`pdf2csv/.agents/skills/pdf2csv/SKILL.md` inside the installed package.
+Do not assume an older pdf2csv release has the same API or bundled skill.
+
+**For maintainers:** edit
+[`pdf2csv/.agents/skills/pdf2csv/SKILL.md`](pdf2csv/.agents/skills/pdf2csv/SKILL.md)
+alongside API/CLI changes. The file is included in wheels and source distributions;
+keep examples accurate for the version being released.
+
 ## CLI Usage
 
 ```sh
