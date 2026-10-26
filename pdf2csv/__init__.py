@@ -1,9 +1,8 @@
-"""
-pdf2csv - A Python package to convert PDF files to CSV tables using Docling.
-"""
+"""pdf2csv - Extract tables from PDF files into CSV or Excel."""
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
-from .converter import convert
+from pdf2csv.converter import convert
+from pdf2csv.errors import Pdf2CsvError
 
-__all__ = ["convert"]
+__all__ = ["Pdf2CsvError", "convert"]
