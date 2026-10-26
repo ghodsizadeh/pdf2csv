@@ -48,5 +48,9 @@ dev = [
     "ruff>=0.8.6",
 ]
 
+examples = [
+    "reportlab>=4.4.0",
+]
+
 [tool.uv]
 package = true
