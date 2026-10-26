@@ -172,8 +172,9 @@ def _rules_from_page(page) -> tuple[list[_Rule], list[_Rule]]:
         elif height <= THIN and width >= MIN_SEGMENT:
             horizontal.append(((top + bottom) / 2, x0, x1))
 
-    for rect in [*page.rects, *page.lines]:
-        add_box(rect["x0"], rect["top"], rect["x1"], rect["bottom"])
+    # Rectangle borders are edges too, not just thin filled rectangles.
+    for edge in page.edges:
+        add_box(edge["x0"], edge["top"], edge["x1"], edge["bottom"])
     return _cluster(vertical), _cluster(horizontal)
 
 
@@ -190,15 +191,21 @@ def _cluster(segments: list[tuple[float, float, float]]) -> list[_Rule]:
 
     rules: list[_Rule] = []
     for group in groups:
-        positions = sorted(item[0] for item in group)
-        rules.append(
-            _Rule(
-                pos=positions[len(positions) // 2],
-                start=min(item[1] for item in group),
-                end=max(item[2] for item in group),
-                length=sum(item[2] - item[1] for item in group),
-            )
-        )
+        # Snap collinear strokes without bridging whitespace between tables.
+        intervals: list[list[tuple[float, float, float]]] = []
+        end = float("-inf")
+        for segment in sorted(group, key=lambda item: item[1]):
+            if not intervals or segment[1] > end + SNAP:
+                intervals.append([segment])
+                end = segment[2]
+            else:
+                intervals[-1].append(segment)
+                end = max(end, segment[2])
+        for interval in intervals:
+            positions = sorted(item[0] for item in interval)
+            start = min(item[1] for item in interval)
+            end = max(item[2] for item in interval)
+            rules.append(_Rule(positions[len(positions) // 2], start, end, end - start))
     return rules
 
 
@@ -211,7 +218,9 @@ def _grids(vertical: list[_Rule], horizontal: list[_Rule]) -> list[_Grid]:
     groups: list[list[_Rule]] = []
     for rule in sorted(strong, key=lambda item: item.pos):
         for group in groups:
-            if _same_span(group[0], rule):
+            if _same_span(group[0], rule) and _connected_rows(
+                group[-1], rule, vertical
+            ):
                 group.append(rule)
                 break
         else:
@@ -245,6 +254,16 @@ def _grids(vertical: list[_Rule], horizontal: list[_Rule]) -> list[_Grid]:
         if len(xs) >= 3 and len(ys) >= 3:
             grids.append(_Grid(xs=xs, ys=ys, vertical=vertical, horizontal=horizontal))
     return _drop_outer(grids)
+
+
+def _connected_rows(top: _Rule, bottom: _Rule, vertical: list[_Rule]) -> bool:
+    """Require an actual vertical stroke across consecutive horizontal rules."""
+    return any(
+        top.start - SNAP <= rule.pos <= top.end + SNAP
+        and rule.start <= top.pos + SNAP
+        and rule.end >= bottom.pos - SNAP
+        for rule in vertical
+    )
 
 
 def _same_span(left: _Rule, right: _Rule) -> bool:
