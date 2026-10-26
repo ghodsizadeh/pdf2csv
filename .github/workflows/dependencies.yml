@@ -1,0 +1,30 @@
+name: Dependency Compatibility
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  dependencies:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        resolution: [lowest-direct, highest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v6
+      - name: Install independently of uv.lock
+        run: |
+          uv venv --python 3.12
+          uv pip install --resolution ${{ matrix.resolution }} -r pyproject.toml
+          uv pip install --no-deps -e .
+          uv pip install 'pytest>=8.3.4'
+          uv pip check
+          uv pip freeze
+      - name: Run all regression and installed-package tests
+        run: .venv/bin/python -m pytest -q

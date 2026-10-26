@@ -1,15 +1,20 @@
 """Command line interface for pdf2csv."""
 
+from enum import Enum
 import logging
 from typing import Optional
 
-import click
 import typer
 
 from pdf2csv.converter import convert
 from pdf2csv.errors import Pdf2CsvError
 
 app = typer.Typer(help="Extract tables from a PDF into CSV or Excel files.")
+
+
+class OutputFormat(str, Enum):
+    csv = "csv"
+    xlsx = "xlsx"
 
 
 @app.callback()
@@ -29,11 +34,10 @@ def convert_cli(
         help="Force right-to-left glyph order inside cells. "
         "Arabic and Hebrew are detected automatically either way.",
     ),
-    output_format: str = typer.Option(
-        "csv",
+    output_format: OutputFormat = typer.Option(
+        OutputFormat.csv,
         "--output-format",
         "-f",
-        click_type=click.Choice(["csv", "xlsx"]),
         help="Format to save the output files. Options are 'csv' and 'xlsx'. Defaults to 'csv'.",
     ),
     verbose: bool = typer.Option(
@@ -50,7 +54,7 @@ def convert_cli(
         "Starting conversion for %s, rtl=%s, output_format=%s ...",
         pdf_path,
         rtl,
-        output_format,
+        output_format.value,
     )
 
     try:
@@ -58,7 +62,7 @@ def convert_cli(
             pdf_path,
             output_dir=output_dir,
             rtl=rtl,
-            output_format=output_format,
+            output_format=output_format.value,
             index=False,
         )
         logging.info("Extracted %s table(s) from %s.", len(frames), pdf_path)
