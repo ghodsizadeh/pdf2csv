@@ -1,7 +1,7 @@
 """Extract ruled PDF tables without a layout model.
 
 Ruled tables are rebuilt from axis-aligned strokes. Glyphs are read from their
-positions, so Arabic and Hebrew keep logical order and digits stay left to right.
+positions, using directional runs to reconstruct common Arabic and Hebrew layouts.
 Pages with no ruling fall back to pdfplumber's text alignment.
 """
 
@@ -259,10 +259,53 @@ def _text_regions(page, ruled_boxes):
     x0, y0, x1, y1 = page.bbox
     for top, bottom in spans[1:]:
         if top - end > threshold:
-            yield remaining.crop((x0, max(y0, start - 1), x1, min(y1, end + 1)))
+            yield from _horizontal_text_regions(
+                remaining.crop((x0, max(y0, start - 1), x1, min(y1, end + 1)))
+            )
             start = top
         end = bottom
-    yield remaining.crop((x0, max(y0, start - 1), x1, min(y1, end + 1)))
+    yield from _horizontal_text_regions(
+        remaining.crop((x0, max(y0, start - 1), x1, min(y1, end + 1)))
+    )
+
+
+def _horizontal_text_regions(page):
+    """Split only unusually wide gutters between repeated text columns.
+
+    A pair of adjacent borderless tables can be indistinguishable from one
+    four-column table. Require two columns on each side, three aligned rows,
+    and a gutter substantially wider than ordinary column spacing. Ambiguous
+    or sparse layouts remain a single region.
+    """
+    words = page.extract_words(keep_blank_chars=True)
+    if not words:
+        return
+    occupied: list[list[float]] = []
+    for word in sorted(words, key=lambda word: word["x0"]):
+        if occupied and word["x0"] <= occupied[-1][1] + SNAP:
+            occupied[-1][1] = max(occupied[-1][1], word["x1"])
+        else:
+            occupied.append([word["x0"], word["x1"]])
+    gaps = [right[0] - left[1] for left, right in zip(occupied, occupied[1:])]
+    minimum = 10 * _median(char["size"] for char in page.chars)
+    cuts = []
+    for index, gap in enumerate(gaps):
+        if index < 1 or index > len(gaps) - 2 or gap < minimum:
+            continue
+        neighbors = [gaps[index - 1], gaps[index + 1]]
+        if gap < 1.5 * max(neighbors):
+            continue
+        cut = (occupied[index][1] + occupied[index + 1][0]) / 2
+        left_rows = _unique([word["top"] for word in words if word["x1"] < cut])
+        right_rows = _unique([word["top"] for word in words if word["x0"] > cut])
+        shared = sum(
+            any(abs(left - right) <= SNAP for right in right_rows) for left in left_rows
+        )
+        if shared >= 3:
+            cuts.append(cut)
+    x0, y0, x1, y1 = page.bbox
+    for left, right in zip([x0, *cuts], [*cuts, x1]):
+        yield page.crop((left, y0, right, y1))
 
 
 def _borderless_tables(page, *, rtl: bool):
@@ -556,30 +599,75 @@ def _drop_justification_spaces(chars: list) -> list:
 
 
 def _logical_tokens(tokens: list[str], force_rtl: bool) -> str:
-    """Turn visual glyph order into logical reading order.
+    """Reconstruct common visual-order runs, preserving each glyph's mapping.
 
-    Tokens are reversed for Arabic and Hebrew, but each PDF glyph keeps its own
-    text. That preserves lam-alef ligatures, which pdfminer already returns in
-    logical order inside a single glyph. Digit runs are then restored so a
-    number painted left to right is not flipped.
+    Visual-to-logical bidi inversion is ambiguous. Prefer an LTR paragraph when
+    Latin text anchors both ends; otherwise use the letter majority (or the RTL
+    hint). Contiguous Latin/numeric phrases retain their visual order. This
+    cannot recover explicit bidi controls or distinguish all logical strings
+    that paint the same visual glyph sequence.
     """
-    # Some PDFs map shaped Arabic glyphs to presentation-form code points.
-    # Normalize each glyph independently so a lam-alef ligature stays intact.
+    # Normalize each glyph independently, preserving logical lam-alef mappings.
     tokens = [
         unicodedata.normalize("NFKC", token)
         if any("\ufb1d" <= char <= "\ufeff" for char in token)
         else token
         for token in tokens
     ]
-    text = "".join(tokens)
-    letters = [char for char in text if unicodedata.category(char).startswith("L")]
-    rtl_letters = [char for char in letters if _RTL_RE.match(char)]
-    mostly_rtl = bool(letters) and len(rtl_letters) / len(letters) >= 0.5
-    if force_rtl and rtl_letters:
-        mostly_rtl = True
-    if not mostly_rtl:
-        return text
+    kinds = [_token_kind(token) for token in tokens]
+    if "rtl" not in kinds:
+        return "".join(tokens)
+    letters = [
+        char
+        for token in tokens
+        for char in token
+        if unicodedata.category(char).startswith("L")
+    ]
+    strong = [kind for kind in kinds if kind in {"rtl", "ltr"}]
+    latin_anchors = strong[0] == strong[-1] == "ltr"
+    mostly_rtl = sum(bool(_RTL_RE.match(char)) for char in letters) >= len(letters) / 2
+    if not latin_anchors and (force_rtl or mostly_rtl):
+        return _reverse_rtl_run(tokens)
 
+    # Preserve Latin identifiers as complete words before finding RTL spans.
+    # Digits/punctuation in ABC-123 must not migrate into an adjacent RTL run.
+    start = 0
+    for index in range(len(tokens) + 1):
+        if index < len(tokens) and not tokens[index].isspace():
+            continue
+        if "ltr" in kinds[start:index]:
+            for pos in range(start, index):
+                if kinds[pos] != "rtl":
+                    kinds[pos] = "ltr"
+        start = index + 1
+
+    # LTR paragraph: reconstruct only the spans between strong Latin glyphs.
+    # The span may include a preceding number, e.g. ABC 123 <Arabic> DEF.
+    result = []
+    start = 0
+    for index, kind in enumerate([*kinds, "ltr"]):
+        if kind != "ltr":
+            continue
+        span = tokens[start:index]
+        if "rtl" in kinds[start:index]:
+            left = 0
+            right = len(span)
+            while left < right and span[left].isspace():
+                left += 1
+            while right > left and span[right - 1].isspace():
+                right -= 1
+            result.extend(span[:left])
+            result.append(_reverse_rtl_run(span[left:right]))
+            result.extend(span[right:])
+        else:
+            result.extend(span)
+        if index < len(tokens):
+            result.append(tokens[index])
+        start = index + 1
+    return "".join(result)
+
+
+def _reverse_rtl_run(tokens: list[str]) -> str:
     flipped = tokens[::-1]
     kinds = [_token_kind(token) for token in flipped]
     index = 0
@@ -590,14 +678,14 @@ def _logical_tokens(tokens: list[str], force_rtl: bool) -> str:
         end = index
         while end < len(flipped) and kinds[end] != "rtl":
             end += 1
-        # Boundary spaces belong between directional runs, not inside the
-        # reversal. Otherwise "123 <RTL>" becomes "<RTL>123 ".
+        # Boundary spaces separate directional runs. Restore each complete
+        # forward-reading phrase, including identifiers, numbers and punctuation.
         start, stop = index, end
         while start < stop and flipped[start].isspace():
             start += 1
         while stop > start and flipped[stop - 1].isspace():
             stop -= 1
-        if any(kinds[pos] == "ltr" for pos in range(start, stop)):
+        if any(kinds[pos] in {"ltr", "number"} for pos in range(start, stop)):
             flipped[start:stop] = flipped[start:stop][::-1]
         index = end
     return _balanced_brackets("".join(flipped))
@@ -635,8 +723,10 @@ def _token_kind(token: str) -> str:
         return "rtl"
     # EN and AN include ASCII, Persian and Arabic-Indic digits. Arabic block
     # membership alone does not make a digit a right-to-left letter.
-    if directions & {"L", "EN", "AN"}:
+    if "L" in directions:
         return "ltr"
+    if directions & {"EN", "AN"}:
+        return "number"
     return "neutral"
 
 

@@ -33,7 +33,7 @@ Python 3.12 or newer is required.
 1. **PDF Input**: Provide the path to a born-digital PDF. By default the file must be an unencrypted `.pdf`, at most 50 MiB, and at most 100 pages.
 2. **Table Extraction**: Connected ruled lines are snapped into separate grids. Text alignment finds borderless tables outside those grids, including on mixed pages.
 3. **DataFrame Conversion**: The first row of each table becomes the column names. A column becomes numeric only when every non-empty cell is a number.
-4. **Right-to-left text**: Arabic and Hebrew glyphs are put back into reading order. Digits are left as written. `--rtl` also treats a mixed cell as right-to-left when any of those letters are present, not only when they are the majority. Columns stay in left-to-right page order.
+4. **Right-to-left text**: Directional runs reconstruct common Arabic and Hebrew layouts while preserving Latin phrases and numbers. `--rtl` prefers RTL interpretation; Latin text at both ends still anchors an LTR paragraph. Columns stay in left-to-right page order.
 5. **CSV/XLSX Output**: Each table is saved in page order, then top-to-bottom and left-to-right within the page. Files are named `<pdf-stem>-table-1.csv` (or `.xlsx`), and so on. Tables on different pages are not automatically stitched together.
 
 Scanned pages and other image-only PDFs are not supported. Those files have no text glyphs to read. See [migration notes and limitations](docs/migration-0.3.md) before upgrading from the Docling-based version.
@@ -102,7 +102,7 @@ page selection, cropping, headerless tables, and numeric/dtype control.
 
 ## English and Farsi examples
 
-The repository includes [13 generated example PDFs](examples/README.md), including
+The repository includes [17 generated example PDFs](examples/README.md), including
 shaped Farsi with embedded fonts, mixed digit scripts, multiple tables and pages:
 
 ```sh
@@ -111,8 +111,11 @@ uv run --locked pdf2csv convert examples/farsi_ruled.pdf -o /tmp/pdf2csv-farsi -
 ```
 
 Arabic/Farsi detection is automatic; `--no-rtl` does not turn it off. `--rtl`
-forces the RTL interpretation when a cell mixes mostly Latin text with RTL text.
-Columns always stay in physical left-to-right page order.
+prefers RTL interpretation when a cell mixes mostly Latin text with RTL text.
+Latin text at both ends retains LTR paragraph order. Columns always stay in
+physical left-to-right page order. Visual glyph positions cannot recover every
+original bidi ordering; the [mixed-direction example](examples/README.md) records
+a numeric/Latin ambiguity explicitly.
 
 ## Development and verification
 

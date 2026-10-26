@@ -81,3 +81,47 @@ def test_farsi_export_roundtrip(output_format, tmp_path):
         else pd.read_excel(destination)
     )
     pd.testing.assert_frame_equal(saved, frames[0])
+
+
+@pytest.mark.parametrize("force_rtl", [False, True])
+@pytest.mark.parametrize(
+    "visual,logical",
+    [
+        ("ABC مالس DEF", "ABC سلام DEF"),
+        ("ABC 123 مالس DEF", "ABC سلام 123 DEF"),
+        ("ABC (مالس) DEF", "ABC (سلام) DEF"),
+        ("ABC123 مالس", "سلام ABC123"),
+        ("ABC-123 مالس", "سلام ABC-123"),
+        ("v1.2 مالس", "سلام v1.2"),
+        ("ABC123 مالس DEF", "ABC123 سلام DEF"),
+        ("ABC-123 مالس DEF", "ABC-123 سلام DEF"),
+        ("v1.2 مالس DEF", "v1.2 سلام DEF"),
+        (")ABC(", ")ABC("),
+    ],
+)
+def test_directional_runs_preserve_latin_anchors_and_identifiers(
+    visual, logical, force_rtl
+):
+    assert _logical_tokens(list(visual), force_rtl) == logical
+
+
+@pytest.mark.parametrize("rtl", [False, True])
+def test_real_pdf_with_latin_arabic_runs_and_ambiguous_number_order(rtl):
+    frame = convert(EXAMPLES / "mixed_direction_runs.pdf", rtl=rtl)[0]
+    assert list(frame.columns) == ["Case", "Text"]
+    assert frame.values.tolist() == [
+        ["anchors", "ABC سلام DEF"],
+        ["number", "ABC سلام 123 DEF"],
+        ["brackets", "ABC (سلام) DEF"],
+        ["identifier", "سلام ABC123"],
+        ["hyphen", "سلام ABC-123"],
+        ["version", "سلام v1.2"],
+        ["id-anchor", "ABC123 سلام DEF"],
+        ["dash-anchor", "ABC-123 سلام DEF"],
+        ["ver-anchor", "v1.2 سلام DEF"],
+        # These two different source strings have identical visual bidi output.
+        # Preserve the contiguous LTR phrase; original number placement is lost.
+        ["ambiguous-a", "سلام ABC 123"],
+        ["ambiguous-b", "سلام ABC 123"],
+        ["latin", "ABC DEF"],
+    ]
