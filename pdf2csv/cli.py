@@ -1,10 +1,20 @@
+"""Command line interface for pdf2csv."""
+
 import logging
+from typing import Optional
+
+import click
 import typer
-from typing import Optional, Literal  # Add Literal
 
 from pdf2csv.converter import convert
+from pdf2csv.errors import Pdf2CsvError
 
-app = typer.Typer(help="CLI tool for converting PDF tables to CSV using Docling.")
+app = typer.Typer(help="Extract tables from a PDF into CSV or Excel files.")
+
+
+@app.callback()
+def callback():
+    """Extract tables from a PDF into CSV or Excel files."""
 
 
 @app.command()
@@ -16,53 +26,52 @@ def convert_cli(
     rtl: bool = typer.Option(
         False,
         "--rtl/--no-rtl",
-        help="Whether to reverse text for right-to-left format (default=False). "
-        "Use '--rtl' to reverse the text.",
+        help="Force right-to-left glyph order inside cells. "
+        "Arabic and Hebrew are detected automatically either way.",
     ),
-    output_format: Literal[
-        "csv", "xlsx"
-    ] = typer.Option(  # Update output_format parameter
+    output_format: str = typer.Option(
         "csv",
         "--output-format",
         "-f",
+        click_type=click.Choice(["csv", "xlsx"]),
         help="Format to save the output files. Options are 'csv' and 'xlsx'. Defaults to 'csv'.",
     ),
     verbose: bool = typer.Option(
         False, "--verbose", "-v", help="Enable verbose (DEBUG) logging."
     ),
 ):
-    """
-    Convert a PDF file to CSV(s) or XLSX(s) and optionally store them in output_dir.
-    """
-    # Configure logging
+    """Convert tables in a PDF to CSV or XLSX files in output_dir."""
     if verbose:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
 
     logging.info(
-        f"Starting conversion for {pdf_path}, rtl={rtl}, output_format={output_format} ..."
+        "Starting conversion for %s, rtl=%s, output_format=%s ...",
+        pdf_path,
+        rtl,
+        output_format,
     )
 
     try:
-        dfs = convert(
+        frames = convert(
             pdf_path,
             output_dir=output_dir,
             rtl=rtl,
             output_format=output_format,
             index=False,
         )
-        logging.info(f"Extracted {len(dfs)} table(s) from {pdf_path}.")
+        logging.info("Extracted %s table(s) from %s.", len(frames), pdf_path)
     except FileNotFoundError as fnf_err:
-        logging.error(str(fnf_err))
+        logging.error("%s", fnf_err)
+    except Pdf2CsvError as err:
+        logging.error("%s", err)
     except Exception as exc:
-        logging.error(f"Error during PDF conversion: {exc}", exc_info=True)
+        logging.error("Error during PDF conversion: %s", exc, exc_info=True)
 
 
 def main():
-    """
-    Entry point for the CLI.
-    """
+    """Entry point for the CLI."""
     app()
 
 

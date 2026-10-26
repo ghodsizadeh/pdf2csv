@@ -1,11 +1,13 @@
 [project]
 name = "pdf2csv"
-version = "0.2.2"
-description = "A python library and CLI tool to convert PDF files to CSV files."
+version = "0.3.0"
+description = "A python library and CLI tool to convert PDF tables to CSV or Excel files."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
-    "docling>=2.14.0",
+    "openpyxl>=3.1.5",
+    "pandas>=2.2.0",
+    "pdfplumber>=0.11.0",
     "typer>=0.12.5",
 ]
 license = { text = "MIT License" }
@@ -15,17 +17,16 @@ keywords = [
     "excel",
     "pdf2csv",
     "data extraction",
-    "docling",
+    "tables",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 authors = [
     { name = "Mehdi Ghodsizadeh", email = "mehdi.ghodsizadeh@gmail.com" },
@@ -36,15 +37,15 @@ Homepage = "https://github.com/ghodsizadeh/pdf2csv"
 Issues = "https://github.com/ghodsizadeh/pdf2csv/issues"
 Repository = "https://github.com/ghodsizadeh/pdf2csv.git"
 
-
-
 [project.scripts]
 pdf2csv = "pdf2csv.cli:main"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pre-commit>=4.0.1",
     "pytest>=8.3.4",
     "ruff>=0.8.6",
 ]
+
+[tool.uv]
 package = true

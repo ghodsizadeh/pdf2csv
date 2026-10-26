@@ -1,0 +1,56 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 2 /Kids [3 0 R 6 0 R] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 400 300] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 355 >>
+stream
+BT
+/F1 12 Tf
+52 132 Td (City) Tj
+100 0 Td (2020) Tj
+80 0 Td (2021) Tj
+-180 -40 Td (Amsterdam) Tj
+100 0 Td (10) Tj
+80 0 Td (12) Tj
+-180 -40 Td (Utrecht) Tj
+100 0 Td (8) Tj
+80 0 Td (9) Tj
+ET
+1 w
+40 160 m 300 160 l S
+40 120 m 300 120 l S
+40 80 m 300 80 l S
+40 40 m 300 40 l S
+40 40 m 40 160 l S
+140 40 m 140 160 l S
+220 40 m 220 160 l S
+300 40 m 300 160 l S
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 400 300] /Resources << >> >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000127 00000 n 
+0000000253 00000 n 
+0000000658 00000 n 
+0000000728 00000 n 
+trailer << /Size 7 /Root 1 0 R >>
+startxref
+816
+%%EOF
