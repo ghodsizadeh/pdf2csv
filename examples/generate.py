@@ -2,6 +2,10 @@
 
 from pathlib import Path
 
+import arabic_reshaper
+from bidi.algorithm import get_display
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
 ROOT = Path(__file__).parent
@@ -31,14 +35,22 @@ def draw_table(pdf, rows, *, left=40, top=80, ruled=True, rectangles=False):
             for col in range(len(rows[0]) + 1):
                 x = left + col * col_width
                 pdf.line(x, PAGE_SIZE[1] - top, x, PAGE_SIZE[1] - bottom)
-    pdf.setFont("Helvetica", 12)
+    farsi = any(
+        "\u0600" <= char <= "\u06ff"
+        for row in rows
+        for value in row
+        for char in str(value)
+    )
     for row, values in enumerate(rows):
         for col, value in enumerate(values):
-            pdf.drawString(
-                left + col * col_width + 10,
-                PAGE_SIZE[1] - top - row * row_height - 23,
-                str(value),
-            )
+            text = str(value)
+            pdf.setFont("NotoNaskhArabic" if farsi else "Helvetica", 12)
+            y = PAGE_SIZE[1] - top - row * row_height - 23
+            if farsi:
+                visual = get_display(arabic_reshaper.reshape(text))
+                pdf.drawRightString(left + (col + 1) * col_width - 10, y, visual)
+            else:
+                pdf.drawString(left + col * col_width + 10, y, text)
 
 
 def english_examples():
@@ -57,5 +69,22 @@ def english_examples():
         pdf.save()
 
 
+def farsi_examples():
+    pdfmetrics.registerFont(
+        TTFont("NotoNaskhArabic", str(ROOT / "fonts" / "NotoNaskhArabic-Regular.ttf"))
+    )
+    rows = [
+        ["شهر", "جمعیت", "توضیح"],
+        ["تهران", "۱۲۳", "سلام ۱۲۳"],
+        ["شیراز", "٤٥٦", "سلام ٤٥٦"],
+        ["تبریز", "789", "سلام 789"],
+    ]
+    for filename, ruled in [("farsi_ruled.pdf", True), ("farsi_borderless.pdf", False)]:
+        pdf = canvas.Canvas(str(ROOT / filename), pagesize=PAGE_SIZE, invariant=1)
+        draw_table(pdf, rows, ruled=ruled)
+        pdf.save()
+
+
 if __name__ == "__main__":
     english_examples()
+    farsi_examples()
