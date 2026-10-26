@@ -422,6 +422,14 @@ def _logical_tokens(tokens: list[str], force_rtl: bool) -> str:
     logical order inside a single glyph. Digit runs are then restored so a
     number painted left to right is not flipped.
     """
+    # Some PDFs map shaped Arabic glyphs to presentation-form code points.
+    # Normalize each glyph independently so a lam-alef ligature stays intact.
+    tokens = [
+        unicodedata.normalize("NFKC", token)
+        if any("\ufb1d" <= char <= "\ufeff" for char in token)
+        else token
+        for token in tokens
+    ]
     text = "".join(tokens)
     letters = [char for char in text if unicodedata.category(char).startswith("L")]
     rtl_letters = [char for char in letters if _RTL_RE.match(char)]
@@ -441,16 +449,31 @@ def _logical_tokens(tokens: list[str], force_rtl: bool) -> str:
         end = index
         while end < len(flipped) and kinds[end] != "rtl":
             end += 1
-        if any(kinds[pos] == "ltr" for pos in range(index, end)):
-            flipped[index:end] = flipped[index:end][::-1]
+        # Boundary spaces belong between directional runs, not inside the
+        # reversal. Otherwise "123 <RTL>" becomes "<RTL>123 ".
+        start, stop = index, end
+        while start < stop and flipped[start].isspace():
+            start += 1
+        while stop > start and flipped[stop - 1].isspace():
+            stop -= 1
+        if any(kinds[pos] == "ltr" for pos in range(start, stop)):
+            flipped[start:stop] = flipped[start:stop][::-1]
+        else:
+            mirrors = str.maketrans("()[]{}<>", ")(][}{><")
+            flipped[start:stop] = [
+                token.translate(mirrors) for token in flipped[start:stop]
+            ]
         index = end
     return "".join(flipped)
 
 
 def _token_kind(token: str) -> str:
-    if any(_RTL_RE.match(char) for char in token):
+    directions = {unicodedata.bidirectional(char) for char in token}
+    if directions & {"R", "AL"}:
         return "rtl"
-    if any(char.isascii() and char.isalnum() for char in token):
+    # EN and AN include ASCII, Persian and Arabic-Indic digits. Arabic block
+    # membership alone does not make a digit a right-to-left letter.
+    if directions & {"L", "EN", "AN"}:
         return "ltr"
     return "neutral"
 
