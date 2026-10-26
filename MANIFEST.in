@@ -1,0 +1,7 @@
+include CHANGELOG.md
+include uv.lock
+recursive-include docs *.md
+recursive-include tests *.py *.pdf
+recursive-include examples *.py *.pdf *.md *.ttf LICENSE
+recursive-include benchmarks *.py *.md *.json *.txt
+recursive-include scripts *.py

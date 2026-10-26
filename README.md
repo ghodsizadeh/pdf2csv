@@ -46,7 +46,14 @@ Requires Python 3.12+.
 pip install pdf2csv
 ```
 
-To use this branch before its release to PyPI, install the checkout instead:
+The offline rewrite is being prepared as `0.3.0rc1`. Once published, opt into
+the candidate explicitly:
+
+```sh
+pip install pdf2csv==0.3.0rc1
+```
+
+Until then, install the checkout instead:
 
 ```sh
 pip install .
@@ -135,3 +142,6 @@ general-purpose PDF accuracy guarantee.
 The CLI exits with `0` on success (including no tables by default), `1` on
 conversion/write errors or empty results with `--fail-on-empty`, and `2` for
 invalid command-line arguments.
+
+See the [release notes](CHANGELOG.md) for compatibility changes and the
+[maintainer release guide](docs/releasing.md) for building, tagging and publishing.
