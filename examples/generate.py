@@ -61,6 +61,7 @@ def english_examples():
         "english_side_by_side.pdf": [{"left": 40}, {"left": 340}],
         "english_rectangles.pdf": [{"rectangles": True}],
         "english_mixed_stacked.pdf": [{"top": 80}, {"top": 350, "ruled": False}],
+        "english_mixed_reverse.pdf": [{"top": 80, "ruled": False}, {"top": 350}],
         "english_mixed_side_by_side.pdf": [{"left": 40}, {"left": 340, "ruled": False}],
         "english_borderless_stacked.pdf": [
             {"top": 80, "ruled": False},
@@ -73,6 +74,13 @@ def english_examples():
             table = [[f"Name {number}", "Score"], *rows[1:]]
             draw_table(pdf, table, **position)
         pdf.save()
+    pdf = canvas.Canvas(
+        str(ROOT / "english_pages.pdf"), pagesize=PAGE_SIZE, invariant=1
+    )
+    for number, top in [(1, 450), (2, 80)]:
+        draw_table(pdf, [[f"Name {number}", "Score"], *rows[1:]], top=top)
+        pdf.showPage()
+    pdf.save()
 
 
 def farsi_examples():
@@ -92,6 +100,11 @@ def farsi_examples():
     pdf = canvas.Canvas(str(ROOT / "farsi_mixed.pdf"), pagesize=PAGE_SIZE, invariant=1)
     draw_table(pdf, rows)
     draw_table(pdf, rows, top=350, ruled=False)
+    pdf.save()
+    pdf = canvas.Canvas(str(ROOT / "farsi_pages.pdf"), pagesize=PAGE_SIZE, invariant=1)
+    for label, top in [("اول", 450), ("دوم", 80)]:
+        draw_table(pdf, [[f"شهر {label}", *rows[0][1:]], *rows[1:]], top=top)
+        pdf.showPage()
     pdf.save()
 
 
