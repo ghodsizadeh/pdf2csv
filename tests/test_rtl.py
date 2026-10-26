@@ -32,7 +32,7 @@ def test_ligature_is_not_reversed_inside_its_glyph():
     assert _logical_tokens(["\ufefb", "م"], False) == "ملا"
 
 
-@pytest.mark.parametrize("name", ["farsi_ruled"])
+@pytest.mark.parametrize("name", ["farsi_ruled", "farsi_borderless"])
 @pytest.mark.parametrize("rtl", [False, True])
 def test_farsi_pdf_text_and_numeric_columns(name, rtl):
     frames = convert(EXAMPLES / f"{name}.pdf", rtl=rtl)
@@ -45,6 +45,14 @@ def test_farsi_pdf_text_and_numeric_columns(name, rtl):
         }
     )
     pd.testing.assert_frame_equal(frames[0], expected)
+
+
+def test_farsi_ruled_and_borderless_tables_are_both_found():
+    frames = convert(EXAMPLES / "farsi_mixed.pdf")
+    assert len(frames) == 2
+    expected = convert(EXAMPLES / "farsi_ruled.pdf")[0]
+    for frame in frames:
+        pd.testing.assert_frame_equal(frame, expected)
 
 
 @pytest.mark.parametrize("output_format", ["csv", "xlsx"])

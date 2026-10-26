@@ -13,7 +13,14 @@ EXAMPLES = Path(__file__).parents[1] / "examples"
 
 @pytest.mark.parametrize(
     "name",
-    ["english_stacked", "english_close_stacked", "english_side_by_side"],
+    [
+        "english_stacked",
+        "english_close_stacked",
+        "english_side_by_side",
+        "english_mixed_stacked",
+        "english_mixed_side_by_side",
+        "english_borderless_stacked",
+    ],
 )
 def test_disconnected_tables_stay_separate(name):
     frames = convert(EXAMPLES / f"{name}.pdf")
