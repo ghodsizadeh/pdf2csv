@@ -31,8 +31,8 @@ def convert_cli(
     rtl: bool = typer.Option(
         False,
         "--rtl/--no-rtl",
-        help="Force right-to-left glyph order inside cells. "
-        "Arabic and Hebrew are detected automatically either way.",
+        help="Treat a mixed cell as right-to-left when it contains any Arabic or Hebrew. "
+        "Those scripts are already detected when they are the majority.",
     ),
     output_format: OutputFormat = typer.Option(
         OutputFormat.csv,
