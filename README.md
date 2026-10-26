@@ -154,7 +154,7 @@ page selection, cropping, headerless tables, and numeric/dtype control.
 
 ## English and Farsi examples
 
-The repository includes [17 generated example PDFs](examples/README.md), including
+The repository includes [23 generated example PDFs](examples/README.md), including
 shaped Farsi with embedded fonts, mixed digit scripts, multiple tables and pages:
 
 ```sh
@@ -168,6 +168,19 @@ Latin text at both ends retains LTR paragraph order. Columns always stay in
 physical left-to-right page order. Visual glyph positions cannot recover every
 original bidi ordering; the [mixed-direction example](examples/README.md) records
 a numeric/Latin ambiguity explicitly.
+
+Quarter-turn text is read using its glyph transformation matrix, including
+rotated numeric cells. Shaded backgrounds are not treated as ruled borders.
+Ruled cells spanning rows repeat their labels in each corresponding output row;
+cells spanning columns keep their body text in the leftmost covered column.
+Stacked headers are joined, while full-width leading titles and trailing notes
+are excluded. Partial internal dividers can yield duplicate column labels; the
+structured API reports `duplicate_header` warnings for these tables.
+
+Borderless detection requires column separators to pass through whitespace and
+rejects widely separated text bands. This reduces prose/cover false positives,
+but can also reject sparse tables or tables with spanning text. It remains a
+conservative heuristic rather than universal table recognition.
 
 ## Development and verification
 

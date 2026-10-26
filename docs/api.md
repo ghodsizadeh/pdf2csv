@@ -34,6 +34,16 @@ extraction cleanup, including joined header bands, normalized whitespace and
 removed empty rows/columns; they are not a record of every original PDF glyph.
 Changing a DataFrame does not change its table's raw rows.
 
+Ruled tables use the physical cell boundaries, including partial row separators.
+Row-spanning labels are repeated across their covered output rows; body text
+spanning columns is emitted once in the leftmost covered column. Partial
+subcolumns are retained, so a shared header can produce duplicate labels.
+Full-width leading titles and trailing annotation bands are excluded, and stacked
+column headers are joined. Different sections within one connected grid are not
+automatically split into separate schemas; repeated section headers remain rows.
+These rules are geometric cleanup, not semantic interpretation of arbitrary
+merged cells. Validate nested or irregular layouts against the PDF.
+
 ## Page selection and crops
 
 ```python

@@ -24,9 +24,9 @@ from pdf2csv.errors import Pdf2CsvError
 from pdf2csv.models import BBox, ExtractedTable, ExtractionWarning
 
 SNAP = 3.0
+_RULE_SNAP = 1.0
 MIN_SEGMENT = 8.0
 THIN = 1.75
-_SPAN_TOLERANCE = 12.0
 _JUSTIFICATION_OVERLAP = 0.35
 
 _RTL_RE = re.compile(
@@ -311,6 +311,19 @@ def _horizontal_text_regions(page):
 def _borderless_tables(page, *, rtl: bool):
     rendered = []
     for table in page.find_tables(_TEXT_SETTINGS):
+        # In a real borderless table the inferred column separators should
+        # pass through whitespace, not through complete text phrases.
+        # Repeated paragraph indents alone can otherwise invent columns.
+        words = page.extract_words(keep_blank_chars=True)
+        x0, top, x1, bottom = table.bbox
+        words = [w for w in words if top <= (w["top"] + w["bottom"]) / 2 <= bottom]
+        baselines = _unique([w["top"] for w in words])
+        font_size = _median(c["size"] for c in page.chars)
+        if any(b - a > 4 * font_size for a, b in zip(baselines, baselines[1:])):
+            continue
+        cuts = _unique([x for cell in table.cells for x in (cell[0], cell[2])])
+        if any(w["x0"] + 1 < cut < w["x1"] - 1 for cut in cuts[1:-1] for w in words):
+            continue
         rows: list[list[str]] = []
         for row in table.rows:
             rows.append(
@@ -332,16 +345,72 @@ def _render_grid(
     grid: _Grid,
     rtl: bool,
 ) -> tuple[tuple[float, float, float, float], list[list[str]]]:
-    header = _headers(page, grid, rtl)
+    # Ignore a full-width title/blank band before the column labels. Combine
+    # genuinely stacked column headers until most leaf columns are separated.
+    start = 0
+    bands = list(zip(grid.ys, grid.ys[1:]))
+    while start < len(bands) - 1 and len(_column_cuts(grid, *bands[start])) == 2:
+        start += 1
+    stop = start
+    while stop < len(bands) - 1:
+        if len(_column_cuts(grid, *bands[stop])) >= max(
+            3, math.ceil(0.75 * len(grid.xs))
+        ):
+            break
+        stop += 1
+    top, bottom = bands[start][0], bands[stop][1]
+    header = _headers(page, grid, rtl, top=top, bottom=bottom)
     rows = [header]
-    for top, bottom in zip(grid.ys[1:], grid.ys[2:]):
-        rows.append(
-            [
-                _text_in_box(page, left, top, right, bottom, rtl)
-                for left, right in zip(grid.xs, grid.xs[1:])
-            ]
-        )
+    body = bands[stop + 1 :]
+    # Full-width annotation bands at the bottom are not data records.
+    while body and len(_column_cuts(grid, *body[-1])) == 2:
+        body.pop()
+    for top, bottom in body:
+        row = []
+        for left, right in zip(grid.xs, grid.xs[1:]):
+            box = _cell_box(grid, (left + right) / 2, (top + bottom) / 2)
+            # Row-spanning labels repeat; a column-spanning label belongs to
+            # its leftmost leaf column, rather than inventing duplicate data.
+            row.append(
+                "" if box[0] < left - _RULE_SNAP else _text_in_box(page, *box, rtl)
+            )
+        rows.append(row)
     return grid.bbox, _drop_empty(rows)
+
+
+def _cell_box(grid, x, y):
+    """Find the actual ruled cell around a grid slot, including spans."""
+    x0, y0, x1, y1 = grid.bbox
+    hs = [
+        h.pos
+        for h in grid.horizontal
+        if h.start - _RULE_SNAP <= x <= h.end + _RULE_SNAP
+    ]
+    vs = [
+        v.pos for v in grid.vertical if v.start - _RULE_SNAP <= y <= v.end + _RULE_SNAP
+    ]
+    return (
+        max([x0, *(v for v in vs if v < x)]),
+        max([y0, *(h for h in hs if h < y)]),
+        min([x1, *(v for v in vs if v > x)]),
+        min([y1, *(h for h in hs if h > y)]),
+    )
+
+
+def _column_cuts(grid, top, bottom):
+    return _unique(
+        [
+            grid.xs[0],
+            grid.xs[-1],
+            *(
+                v.pos
+                for v in grid.vertical
+                if grid.xs[0] < v.pos < grid.xs[-1]
+                and _overlap(v.start, v.end, top, bottom) >= 0.5 * (bottom - top)
+            ),
+        ],
+        tolerance=_RULE_SNAP,
+    )
 
 
 def _rules_from_page(page) -> tuple[list[_Rule], list[_Rule]]:
@@ -356,10 +425,72 @@ def _rules_from_page(page) -> tuple[list[_Rule], list[_Rule]]:
         elif height <= THIN and width >= MIN_SEGMENT:
             horizontal.append(((top + bottom) / 2, x0, x1))
 
-    # Rectangle borders are edges too, not just thin filled rectangles.
+    # A filled cell/background rectangle has edges in pdfplumber too, even
+    # when none were stroked. Word emits many such boxes behind individual
+    # lines of text. Treating their outlines as rules invents rows/columns.
     for edge in page.edges:
-        add_box(edge["x0"], edge["top"], edge["x1"], edge["bottom"])
-    return _cluster(vertical), _cluster(horizontal)
+        if edge["object_type"] != "rect_edge" and edge.get("stroke", True):
+            add_box(edge["x0"], edge["top"], edge["x1"], edge["bottom"])
+    for rect in page.rects:
+        x0, top, x1, bottom = rect["x0"], rect["top"], rect["x1"], rect["bottom"]
+        if rect.get("stroke"):
+            for box in [
+                (x0, top, x1, top),
+                (x0, bottom, x1, bottom),
+                (x0, top, x0, bottom),
+                (x1, top, x1, bottom),
+            ]:
+                add_box(*box)
+        elif rect.get("fill"):
+            add_box(x0, top, x1, bottom)
+    vertical, horizontal = _cluster(vertical), _cluster(horizontal)
+    return _strip_decorative_frame(page, vertical, horizontal)
+
+
+def _strip_decorative_frame(page, vertical, horizontal):
+    """Remove repeated inset page-border strokes, retaining attached tables.
+
+    Require parallel long strokes on all four margins so an ordinary large
+    table is not mistaken for a page frame. A table may touch one frame edge;
+    trim that vertical stroke to its surviving table intersections.
+    """
+    x0, y0, x1, y1 = getattr(page, "root_page", page).bbox
+    width, height = x1 - x0, y1 - y0
+    sides = [
+        [v for v in vertical if v.span > 0.85 * height and v.pos < x0 + 0.1 * width],
+        [v for v in vertical if v.span > 0.85 * height and v.pos > x1 - 0.1 * width],
+    ]
+    ends = [
+        [h for h in horizontal if h.span > 0.85 * width and h.pos < y0 + 0.1 * height],
+        [h for h in horizontal if h.span > 0.85 * width and h.pos > y1 - 0.1 * height],
+    ]
+    if any(len(side) < 2 for side in [*sides, *ends]):
+        return vertical, horizontal
+    left = max(v.pos for v in sides[0])
+    right = min(v.pos for v in sides[1])
+    top = max(h.pos for h in ends[0])
+    bottom = min(h.pos for h in ends[1])
+    horizontal = [
+        h
+        for h in horizontal
+        if top + _RULE_SNAP < h.pos < bottom - _RULE_SNAP
+        and _overlap(h.start, h.end, left, right) > _RULE_SNAP
+    ]
+    kept = []
+    for v in vertical:
+        if v in [*sides[0], *sides[1]]:
+            contacts = [
+                h.pos
+                for h in horizontal
+                if h.start - _RULE_SNAP <= v.pos <= h.end + _RULE_SNAP
+            ]
+            if len(contacts) < 2:
+                continue
+            start, end = min(contacts), max(contacts)
+            kept.append(_Rule(v.pos, start, end, end - start))
+        elif v.start >= top - _RULE_SNAP and v.end <= bottom + _RULE_SNAP:
+            kept.append(v)
+    return kept, horizontal
 
 
 def _cluster(segments: list[tuple[float, float, float]]) -> list[_Rule]:
@@ -368,7 +499,7 @@ def _cluster(segments: list[tuple[float, float, float]]) -> list[_Rule]:
     ordered = sorted(segments, key=lambda item: item[0])
     groups: list[list[tuple[float, float, float]]] = [[ordered[0]]]
     for segment in ordered[1:]:
-        if abs(segment[0] - groups[-1][-1][0]) <= SNAP:
+        if abs(segment[0] - groups[-1][0][0]) <= _RULE_SNAP:
             groups[-1].append(segment)
         else:
             groups.append([segment])
@@ -379,7 +510,7 @@ def _cluster(segments: list[tuple[float, float, float]]) -> list[_Rule]:
         intervals: list[list[tuple[float, float, float]]] = []
         end = float("-inf")
         for segment in sorted(group, key=lambda item: item[1]):
-            if not intervals or segment[1] > end + SNAP:
+            if not intervals or segment[1] > end + _RULE_SNAP:
                 intervals.append([segment])
                 end = segment[2]
             else:
@@ -394,67 +525,52 @@ def _cluster(segments: list[tuple[float, float, float]]) -> list[_Rule]:
 
 
 def _grids(vertical: list[_Rule], horizontal: list[_Rule]) -> list[_Grid]:
-    strong = [
-        rule
-        for rule in horizontal
-        if rule.length >= 36 and rule.length >= 0.65 * max(rule.span, 1)
-    ]
-    groups: list[list[_Rule]] = []
-    for rule in sorted(strong, key=lambda item: item.pos):
-        for group in groups:
-            if _same_span(group[0], rule) and _connected_rows(
-                group[-1], rule, vertical
+    """Join intersecting strokes, including partial rules across merged cells.
+
+    Equal horizontal spans are not required: a row-spanning unit/description
+    cell interrupts otherwise valid body separators. Keep disconnected tables
+    separate by requiring actual intersections at the tighter rule tolerance.
+    """
+    parent = list(range(len(vertical) + len(horizontal)))
+
+    def find(index):
+        while parent[index] != index:
+            parent[index] = parent[parent[index]]
+            index = parent[index]
+        return index
+
+    for vi, v in enumerate(vertical):
+        for hi, h in enumerate(horizontal, len(vertical)):
+            if (
+                h.start - _RULE_SNAP <= v.pos <= h.end + _RULE_SNAP
+                and v.start - _RULE_SNAP <= h.pos <= v.end + _RULE_SNAP
             ):
-                group.append(rule)
-                break
-        else:
-            groups.append([rule])
-
-    grids: list[_Grid] = []
-    for group in groups:
-        if len(group) < 3:
+                parent[find(vi)] = find(hi)
+    groups: dict[int, tuple[list[_Rule], list[_Rule]]] = {}
+    for index, rule in enumerate([*vertical, *horizontal]):
+        vs, hs = groups.setdefault(find(index), ([], []))
+        (vs if index < len(vertical) else hs).append(rule)
+    grids = []
+    for vs, hs in groups.values():
+        if len(vs) < 3 or len(hs) < 3:
             continue
-        group.sort(key=lambda item: item.pos)
-        left = _median(rule.start for rule in group)
-        right = _median(rule.end for rule in group)
-        top = group[0].pos
-        bottom = group[-1].pos
+        top, bottom = min(h.pos for h in hs), max(h.pos for h in hs)
         height = bottom - top
-        if height < 20 or right - left < 40:
+        if height < 20:
             continue
-        xs = [
-            rule.pos
-            for rule in vertical
-            if left - SNAP <= rule.pos <= right + SNAP
-            and _overlap(rule.start, rule.end, top, bottom) >= 0.45 * height
-        ]
-        xs = _unique(xs)
-        if not xs or left < xs[0] - 8:
-            xs = [left, *xs]
-        if right > xs[-1] + 8:
-            xs = [*xs, right]
-        xs = _unique(xs)
-        ys = _unique([rule.pos for rule in group])
-        if len(xs) >= 3 and len(ys) >= 3:
-            grids.append(_Grid(xs=xs, ys=ys, vertical=vertical, horizontal=horizontal))
+        xs = _unique(
+            [v.pos for v in vs if v.span >= 0.45 * height], tolerance=_RULE_SNAP
+        )
+        if len(xs) < 3 or xs[-1] - xs[0] < 40:
+            continue
+        # Retain partial internal dividers as leaf columns too, so an inset
+        # subcell is not silently lost inside a wider row-spanning cell.
+        xs = _unique(
+            [*xs, *(v.pos for v in vs if xs[0] < v.pos < xs[-1])], tolerance=_RULE_SNAP
+        )
+        ys = _unique([h.pos for h in hs], tolerance=_RULE_SNAP)
+        grids.append(_Grid(xs=xs, ys=ys, vertical=vs, horizontal=hs))
     return _drop_outer(grids)
-
-
-def _connected_rows(top: _Rule, bottom: _Rule, vertical: list[_Rule]) -> bool:
-    """Require an actual vertical stroke across consecutive horizontal rules."""
-    return any(
-        top.start - SNAP <= rule.pos <= top.end + SNAP
-        and rule.start <= top.pos + SNAP
-        and rule.end >= bottom.pos - SNAP
-        for rule in vertical
-    )
-
-
-def _same_span(left: _Rule, right: _Rule) -> bool:
-    return (
-        abs(left.start - right.start) <= _SPAN_TOLERANCE
-        and abs(left.end - right.end) <= _SPAN_TOLERANCE
-    )
 
 
 def _drop_outer(grids: list[_Grid]) -> list[_Grid]:
@@ -477,47 +593,29 @@ def _drop_outer(grids: list[_Grid]) -> list[_Grid]:
     return kept
 
 
-def _headers(page, grid: _Grid, rtl: bool) -> list[str]:
+def _headers(page, grid: _Grid, rtl: bool, *, top=None, bottom=None) -> list[str]:
     """Join stacked header bands, keeping labels that span several columns."""
     xs = grid.xs
-    top, bottom = grid.ys[0], grid.ys[1]
-    width = xs[-1] - xs[0]
-    internal = [
-        rule.pos
-        for rule in grid.horizontal
-        if top + 2 < rule.pos < bottom - 2
-        and _overlap(rule.start, rule.end, xs[0], xs[-1]) >= 0.35 * width
-    ]
-    bands = _unique([top, *internal, bottom], tolerance=2.0)
-    names: list[list[str]] = [[] for _ in range(len(xs) - 1)]
-    for band_top, band_bottom in zip(bands, bands[1:]):
-        cuts = [xs[0], xs[-1]]
-        band_height = max(band_bottom - band_top, 1)
-        for rule in grid.vertical:
-            crosses = (
-                _overlap(rule.start, rule.end, band_top, band_bottom)
-                >= 0.45 * band_height
-            )
-            if xs[0] - 1 <= rule.pos <= xs[-1] + 1 and crosses:
-                cuts.append(rule.pos)
-        pieces: list[tuple[float, float, str]] = []
-        ordered_cuts = _unique(cuts)
-        for left, right in zip(ordered_cuts, ordered_cuts[1:]):
-            pieces.append(
-                (
-                    left,
-                    right,
-                    _text_in_box(page, left, band_top, right, band_bottom, rtl),
-                )
-            )
-        for index in range(len(xs) - 1):
-            mid = (xs[index] + xs[index + 1]) / 2
-            for left, right, text in pieces:
-                if left - 0.8 <= mid <= right + 0.8 and text:
-                    if not names[index] or names[index][-1] != text:
-                        names[index].append(text)
-                    break
-    return [_collapse(" ".join(parts)) for parts in names]
+    top = grid.ys[0] if top is None else top
+    bottom = grid.ys[1] if bottom is None else bottom
+    bands = _unique(
+        [top, *(y for y in grid.ys if top < y < bottom), bottom], tolerance=_RULE_SNAP
+    )
+    names = []
+    for left, right in zip(xs, xs[1:]):
+        parts = []
+        seen = set()
+        for band_top, band_bottom in zip(bands, bands[1:]):
+            box = _cell_box(grid, (left + right) / 2, (band_top + band_bottom) / 2)
+            box = (box[0], max(top, box[1]), box[2], min(bottom, box[3]))
+            if box in seen:
+                continue
+            seen.add(box)
+            text = _text_in_box(page, *box, rtl)
+            if text and (not parts or parts[-1] != text):
+                parts.append(text)
+        names.append(_collapse(" ".join(parts)))
+    return names
 
 
 def _text_in_box(page, x0: float, y0: float, x1: float, y1: float, rtl: bool) -> str:
@@ -539,7 +637,45 @@ def _text_in_box(page, x0: float, y0: float, x1: float, y1: float, rtl: bool) ->
     if not selected:
         return ""
 
-    selected.sort(key=lambda char: char["top"])
+    # Use the text matrix rather than `upright`: some Word PDFs report True
+    # for glyphs whose baseline is rotated by 90 degrees.
+    orientations: dict[int, list] = {}
+    for char in selected:
+        matrix = char.get("matrix", (1, 0, 0, 1, 0, 0))
+        degrees = math.degrees(math.atan2(matrix[1], matrix[0]))
+        quarter_turn = round(degrees / 90) * 90
+        angle = quarter_turn if abs(degrees - quarter_turn) <= 1 else 0
+        orientations.setdefault(angle % 360, []).append(char)
+    parts = []
+    for angle, chars in orientations.items():
+        if angle:
+            radians = math.radians(angle)
+            cosine, sine = math.cos(radians), math.sin(radians)
+            transformed = []
+            for char in chars:
+                points = [
+                    (x * cosine - y * sine, x * sine + y * cosine)
+                    for x in (char["x0"], char["x1"])
+                    for y in (char["top"], char["bottom"])
+                ]
+                xs, ys = zip(*points)
+                transformed.append(
+                    {
+                        **char,
+                        "x0": min(xs),
+                        "x1": max(xs),
+                        "top": min(ys),
+                        "bottom": max(ys),
+                        "size": max(ys) - min(ys),
+                    }
+                )
+            chars = transformed
+        parts.append(_render_lines(chars, rtl))
+    return _collapse(" ".join(parts))
+
+
+def _render_lines(selected, rtl):
+    selected = sorted(selected, key=lambda char: char["top"])
     lines: list[list] = [[selected[0]]]
     for char in selected[1:]:
         size = max(char["size"], 1)

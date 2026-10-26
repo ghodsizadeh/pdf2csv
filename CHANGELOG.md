@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- Distinguish visible rules from unstroked cell/text backgrounds in Word PDFs;
+  use tighter stroke snapping and connected strokes to retain partial row rules.
+- Read 90°, 180° and 270° cell text from glyph matrices, preserving Farsi and
+  signed numeric runs even when a PDF reports the glyphs as upright.
+- Retain row-spanning labels, partial subcolumns and stacked headers; exclude
+  full-width leading titles and trailing annotation bands.
+- Separate decorative page frames from tables that touch them, and require
+  borderless column separators to pass through whitespace. The latter is a
+  conservative precision tradeoff for sparse/spanning borderless layouts.
+
 ## 0.3.0rc1
 
 First release candidate of the offline extractor rewrite. This is a prerelease;

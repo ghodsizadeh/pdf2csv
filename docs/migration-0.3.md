@@ -58,8 +58,12 @@ and `convert-cli` remains an alias. See the [CLI guide](cli.md).
 ## Known limitations
 
 - Text alignment is heuristic and may confuse aligned prose with tables.
-- Rotated text, arbitrary merged body cells, unusual font mappings, complex
+- Arbitrarily slanted text, irregular merged body cells, unusual font mappings, complex
   bidirectional nesting and irregular/broken grids are not universally supported.
+- Quarter-turn text is reconstructed using glyph matrices. Row-spanning ruled
+  labels repeat across output rows; column-spanning body labels appear once.
+  Full-width leading titles/trailing notes are excluded. Borderless tables with
+  spanning text or very sparse rows can be rejected by the conservative filter.
 - Different logical bidirectional strings can paint identical glyphs, so their
   original word/number order cannot always be recovered. Borderless gutter
   splitting is conservative and cannot distinguish every neighboring table.

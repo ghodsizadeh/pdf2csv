@@ -1,0 +1,2 @@
+# PDFs contain fixed-width cross-reference records, not editable text lines.
+*.pdf binary
