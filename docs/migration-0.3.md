@@ -18,7 +18,7 @@ not a drop-in replacement for every document Docling can process.
 | Table order | Page order, then top-to-bottom/left-to-right on each page. Each table is independent; continued tables are not stitched. |
 | Numeric cleanup | A column becomes numeric only when all nonempty cells are numbers. Persian and Arabic-Indic digits are accepted; mixed text remains text. |
 | Errors | Invalid inputs raise `Pdf2CsvError` (missing paths raise `FileNotFoundError`). Export failures propagate rather than being silently swallowed. |
-| CLI errors | Conversion/write errors exit `1`; argument errors exit `2`. No detected tables is a successful empty result. |
+| CLI errors | Conversion/write errors exit `1`; argument errors exit `2`. No detected tables is a successful empty result unless `--fail-on-empty` is set. |
 
 If you need OCR or complex semantic layout interpretation, keep the older version
 in a separate environment or use Docling directly. Do not feed a scanned file to
@@ -50,8 +50,10 @@ PDF memory: do not treat input byte/page validation as sandboxing untrusted PDFs
 When `output_dir` is omitted, nothing is written. Writer keyword arguments such
 as `index=False` are forwarded to pandas. As before, the Python API otherwise
 uses pandas' default of exporting the dataframe index; the CLI always omits it.
-Existing output filenames can be overwritten, so use a new directory when you
-need to preserve previous exports.
+The Python API overwrites existing output filenames by default. The CLI protects
+existing output files and requires `--overwrite` to replace them; it checks every
+planned destination before writing any tables. `convert` is the preferred command,
+and `convert-cli` remains an alias. See the [CLI guide](cli.md).
 
 ## Known limitations
 
