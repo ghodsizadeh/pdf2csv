@@ -7,9 +7,10 @@ import sys
 from packaging.requirements import Requirement
 
 
-def test_click_is_a_direct_runtime_dependency():
+def test_imported_libraries_are_direct_dependencies():
     dependencies = {Requirement(item).name for item in requires("pdf2csv")}
-    assert "click" in dependencies
+    assert {"openpyxl", "pandas", "pdfplumber", "typer"} <= dependencies
+    assert "click" not in dependencies
 
 
 def test_installed_cli_starts():

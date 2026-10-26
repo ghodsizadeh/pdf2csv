@@ -5,7 +5,6 @@ description = "A python library and CLI tool to convert PDF tables to CSV or Exc
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "click>=8.1.8",
     "openpyxl>=3.1.5",
     "pandas>=2.2.0",
     "pdfplumber>=0.11.7",
@@ -57,3 +56,12 @@ examples = [
 
 [tool.uv]
 package = true
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+# Explicit selection so a newer Ruff cannot change the result by expanding
+# its defaults. This is the rule set Ruff 0.8 used, which CI locks.
+select = ["E4", "E7", "E9", "F"]
