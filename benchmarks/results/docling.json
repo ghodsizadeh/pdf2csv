@@ -1,0 +1,131 @@
+{
+  "engine": "docling",
+  "python": "3.12.6",
+  "system": "Darwin",
+  "machine": "arm64",
+  "runs": 3,
+  "ocr": false,
+  "results": [
+    {
+      "pdf": "examples/english_stacked.pdf",
+      "expected_tables": 2,
+      "seconds": [
+        3.3721272499969928,
+        0.7574826659983955,
+        0.7315368749987101
+      ],
+      "actual_tables": 2,
+      "exact_tables": 2,
+      "matched_cells": 12,
+      "total_cells": 12,
+      "median_seconds": 0.7574826659983955
+    },
+    {
+      "pdf": "examples/english_side_by_side.pdf",
+      "expected_tables": 2,
+      "seconds": [
+        0.8001612079970073,
+        0.7281568339967635,
+        0.7287196249963017
+      ],
+      "actual_tables": 2,
+      "exact_tables": 2,
+      "matched_cells": 12,
+      "total_cells": 12,
+      "median_seconds": 0.7287196249963017
+    },
+    {
+      "pdf": "examples/english_mixed_stacked.pdf",
+      "expected_tables": 2,
+      "seconds": [
+        0.728627416989184,
+        0.7404009169986239,
+        0.7223000410012901
+      ],
+      "actual_tables": 2,
+      "exact_tables": 1,
+      "matched_cells": 6,
+      "total_cells": 14,
+      "median_seconds": 0.728627416989184
+    },
+    {
+      "pdf": "examples/english_pages.pdf",
+      "expected_tables": 2,
+      "seconds": [
+        1.046915416009142,
+        1.0442370410019066,
+        1.0542202499927953
+      ],
+      "actual_tables": 2,
+      "exact_tables": 2,
+      "matched_cells": 12,
+      "total_cells": 12,
+      "median_seconds": 1.046915416009142
+    },
+    {
+      "pdf": "examples/farsi_ruled.pdf",
+      "expected_tables": 1,
+      "seconds": [
+        0.5722001670073951,
+        0.5903806669957703,
+        0.5742853340052534
+      ],
+      "actual_tables": 1,
+      "exact_tables": 0,
+      "matched_cells": 6,
+      "total_cells": 12,
+      "median_seconds": 0.5742853340052534
+    },
+    {
+      "pdf": "examples/farsi_borderless.pdf",
+      "expected_tables": 1,
+      "seconds": [
+        0.5631541670009028
+      ],
+      "error": "AttributeError: Can only use .str accessor with string values!",
+      "actual_tables": 0,
+      "exact_tables": 0,
+      "matched_cells": 0,
+      "total_cells": 12,
+      "median_seconds": 0.5631541670009028
+    },
+    {
+      "pdf": "examples/farsi_pages.pdf",
+      "expected_tables": 2,
+      "seconds": [
+        1.138392249995377,
+        1.1404285420139786,
+        1.1372422499989625
+      ],
+      "actual_tables": 2,
+      "exact_tables": 0,
+      "matched_cells": 12,
+      "total_cells": 24,
+      "median_seconds": 1.138392249995377
+    },
+    {
+      "pdf": "tests/assets/rtl_test.pdf",
+      "expected_tables": 1,
+      "seconds": [
+        0.994711916995584,
+        0.9714132079971023,
+        0.9643406250106636
+      ],
+      "actual_tables": 1,
+      "exact_tables": 0,
+      "matched_cells": 53,
+      "total_cells": 66,
+      "median_seconds": 0.9714132079971023
+    }
+  ],
+  "versions": {
+    "docling": "2.14.0",
+    "docling-core": "2.12.1",
+    "docling-ibm-models": "3.1.0",
+    "torch": "2.5.1",
+    "scipy": "1.17.1",
+    "pandas": "2.2.3"
+  },
+  "initialization_seconds": 2.8191817500046454,
+  "peak_rss_bytes": 836091904
+}

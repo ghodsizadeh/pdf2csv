@@ -1,0 +1,128 @@
+{
+  "engine": "offline",
+  "python": "3.12.6",
+  "system": "Darwin",
+  "machine": "arm64",
+  "runs": 3,
+  "ocr": false,
+  "results": [
+    {
+      "pdf": "examples/english_stacked.pdf",
+      "expected_tables": 2,
+      "seconds": [
+        0.004586458002449945,
+        0.0036455410008784384,
+        0.0035954580089310184
+      ],
+      "actual_tables": 2,
+      "exact_tables": 2,
+      "matched_cells": 12,
+      "total_cells": 12,
+      "median_seconds": 0.0036455410008784384
+    },
+    {
+      "pdf": "examples/english_side_by_side.pdf",
+      "expected_tables": 2,
+      "seconds": [
+        0.0034878339938586578,
+        0.003519792007864453,
+        0.00415370799601078
+      ],
+      "actual_tables": 2,
+      "exact_tables": 2,
+      "matched_cells": 12,
+      "total_cells": 12,
+      "median_seconds": 0.003519792007864453
+    },
+    {
+      "pdf": "examples/english_mixed_stacked.pdf",
+      "expected_tables": 2,
+      "seconds": [
+        0.0035831669956678525,
+        0.0035702079912880436,
+        0.003402917005587369
+      ],
+      "actual_tables": 2,
+      "exact_tables": 2,
+      "matched_cells": 12,
+      "total_cells": 12,
+      "median_seconds": 0.0035702079912880436
+    },
+    {
+      "pdf": "examples/english_pages.pdf",
+      "expected_tables": 2,
+      "seconds": [
+        0.003761542000574991,
+        0.003747750000911765,
+        0.00361483299639076
+      ],
+      "actual_tables": 2,
+      "exact_tables": 2,
+      "matched_cells": 12,
+      "total_cells": 12,
+      "median_seconds": 0.003747750000911765
+    },
+    {
+      "pdf": "examples/farsi_ruled.pdf",
+      "expected_tables": 1,
+      "seconds": [
+        0.004938250000122935,
+        0.0046155410091159865,
+        0.004376416007289663
+      ],
+      "actual_tables": 1,
+      "exact_tables": 1,
+      "matched_cells": 12,
+      "total_cells": 12,
+      "median_seconds": 0.0046155410091159865
+    },
+    {
+      "pdf": "examples/farsi_borderless.pdf",
+      "expected_tables": 1,
+      "seconds": [
+        0.0047874169977148995,
+        0.004833792001591064,
+        0.0046556250017602
+      ],
+      "actual_tables": 1,
+      "exact_tables": 1,
+      "matched_cells": 12,
+      "total_cells": 12,
+      "median_seconds": 0.0047874169977148995
+    },
+    {
+      "pdf": "examples/farsi_pages.pdf",
+      "expected_tables": 2,
+      "seconds": [
+        0.00735808300669305,
+        0.007285166997462511,
+        0.00784166700032074
+      ],
+      "actual_tables": 2,
+      "exact_tables": 2,
+      "matched_cells": 24,
+      "total_cells": 24,
+      "median_seconds": 0.00735808300669305
+    },
+    {
+      "pdf": "tests/assets/rtl_test.pdf",
+      "expected_tables": 1,
+      "seconds": [
+        0.09969712501333561,
+        0.11285370799305383,
+        0.09920433298975695
+      ],
+      "actual_tables": 1,
+      "exact_tables": 1,
+      "matched_cells": 66,
+      "total_cells": 66,
+      "median_seconds": 0.09969712501333561
+    }
+  ],
+  "versions": {
+    "pdf2csv": "0.3.0",
+    "pdfplumber": "0.11.10"
+  },
+  "initialization_seconds": 0.17689058399992064,
+  "peak_rss_bytes": 100286464
+}
