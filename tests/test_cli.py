@@ -240,3 +240,22 @@ def test_tracebacks_are_only_logged_in_verbose_mode(
     result = CliRunner().invoke(app, args)
     assert result.exit_code == 1
     assert bool(caplog.records[-1].exc_info) is verbose
+
+
+def test_overwrite_preflights_later_directory_before_replacing_files(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(
+        "pdf2csv.cli.convert",
+        lambda *args, **kwargs: [pd.DataFrame({"a": [1]}), pd.DataFrame({"b": [2]})],
+    )
+    first_output = tmp_path / "input-table-1.csv"
+    first_output.write_text("previous export", encoding="utf-8")
+    second_output = tmp_path / "input-table-2.csv"
+    second_output.mkdir()
+    result = CliRunner().invoke(
+        app, ["convert", "input.pdf", "-o", str(tmp_path), "--overwrite"]
+    )
+    assert result.exit_code == 1
+    assert first_output.read_text(encoding="utf-8") == "previous export"
+    assert second_output.is_dir()
