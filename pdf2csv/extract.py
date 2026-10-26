@@ -7,8 +7,10 @@ Pages with no ruling fall back to pdfplumber's text alignment.
 
 from __future__ import annotations
 
+import math
 import re
 import unicodedata
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -19,6 +21,7 @@ from pdfminer.psparser import PSException
 from pdfplumber.utils.exceptions import PdfminerException
 
 from pdf2csv.errors import Pdf2CsvError
+from pdf2csv.models import BBox, ExtractedTable, ExtractionWarning
 
 SNAP = 3.0
 MIN_SEGMENT = 8.0
@@ -84,9 +87,23 @@ def extract_tables(
     rtl: bool,
     max_pages: int,
 ) -> list[list[list[str]]]:
-    """Return tables as rows of strings. The first row of each table is the header."""
-    if max_pages < 1:
-        raise Pdf2CsvError("max_pages must be a positive number")
+    """Return tables as rows of strings (compatibility wrapper)."""
+    tables, _ = extract_table_results(pdf_path, rtl=rtl, max_pages=max_pages)
+    return [table.rows for table in tables]
+
+
+def extract_table_results(
+    pdf_path: Path,
+    *,
+    rtl: bool,
+    max_pages: int,
+    pages: Sequence[int] | None = None,
+    crop: BBox | Mapping[int, BBox] | None = None,
+) -> tuple[list[ExtractedTable], list[ExtractionWarning]]:
+    """Extract strings and source metadata without DataFrame transformations."""
+    if isinstance(max_pages, bool) or not isinstance(max_pages, int) or max_pages < 1:
+        raise Pdf2CsvError("max_pages must be a positive integer")
+    selected, crops = _selection_options(pages, crop)
 
     try:
         pdf_handle = pdfplumber.open(pdf_path)
@@ -107,29 +124,107 @@ def extract_tables(
             raise Pdf2CsvError(
                 f"PDF has {page_count} pages, which exceeds the limit of {max_pages}"
             )
+        if selected is None:
+            selected = list(range(1, page_count + 1))
+        if any(number > page_count for number in selected):
+            raise Pdf2CsvError(
+                f"pages contains a page beyond the document's {page_count} pages"
+            )
+        if isinstance(crops, dict) and any(number > page_count for number in crops):
+            raise Pdf2CsvError(
+                f"crop contains a page beyond the document's {page_count} pages"
+            )
 
-        tables: list[list[list[str]]] = []
-        for page in pdf.pages:
-            page_tables = _tables_on_page(page, rtl=rtl)
-            page_tables.sort(key=lambda item: (item[0][1], item[0][0]))
-            tables.extend(rows for _, rows in page_tables)
+        # Validate all crop bounds before doing any extraction.
+        page_regions = []
+        for number in selected:
+            page = pdf.pages[number - 1]
+            box = crops.get(number) if isinstance(crops, dict) else crops
+            if box is not None:
+                x0, y0, x1, y1 = page.bbox
+                if not (x0 <= box[0] < box[2] <= x1 and y0 <= box[1] < box[3] <= y1):
+                    raise Pdf2CsvError(f"crop is outside the bounds of page {number}")
+                page = page.crop(box)
+            page_regions.append((number, page))
 
-    return tables
+        tables: list[ExtractedTable] = []
+        warnings: list[ExtractionWarning] = []
+        for number, page in page_regions:
+            page_tables = _table_details_on_page(page, rtl=rtl, page_number=number)
+            page_tables.sort(key=lambda item: (item.bbox[1], item.bbox[0]))
+            if not page_tables:
+                warnings.append(
+                    ExtractionWarning(
+                        "no_tables", "No tables were detected on this page.", number
+                    )
+                )
+            tables.extend(page_tables)
+    return tables, warnings
+
+
+def _selection_options(pages, crop):
+    selected = None
+    if pages is not None:
+        if isinstance(pages, (str, bytes)) or not isinstance(pages, Sequence):
+            raise Pdf2CsvError(
+                "pages must be a non-empty sequence of 1-based page numbers"
+            )
+        if not pages or any(
+            isinstance(n, bool) or not isinstance(n, int) or n < 1 for n in pages
+        ):
+            raise Pdf2CsvError(
+                "pages must be a non-empty sequence of 1-based page numbers"
+            )
+        selected = sorted(set(pages))
+    if isinstance(crop, Mapping):
+        if any(isinstance(n, bool) or not isinstance(n, int) or n < 1 for n in crop):
+            raise Pdf2CsvError("crop page numbers must be positive integers")
+        if selected is not None and any(n not in selected for n in crop):
+            raise Pdf2CsvError("crop page numbers must be included in pages")
+        return selected, {number: _validated_box(box) for number, box in crop.items()}
+    return selected, None if crop is None else _validated_box(crop)
+
+
+def _validated_box(box) -> BBox:
+    if isinstance(box, (str, bytes)) or not isinstance(box, Sequence) or len(box) != 4:
+        raise Pdf2CsvError(
+            "crop must contain four finite coordinates (x0, top, x1, bottom)"
+        )
+    if any(
+        isinstance(n, bool) or not isinstance(n, (int, float)) or not math.isfinite(n)
+        for n in box
+    ):
+        raise Pdf2CsvError(
+            "crop must contain four finite coordinates (x0, top, x1, bottom)"
+        )
+    if box[0] >= box[2] or box[1] >= box[3]:
+        raise Pdf2CsvError("crop must have positive width and height")
+    return tuple(float(n) for n in box)
 
 
 def _tables_on_page(
     page, *, rtl: bool
 ) -> list[tuple[tuple[float, float, float, float], list[list[str]]]]:
+    return [
+        (table.bbox, table.rows)
+        for table in _table_details_on_page(page, rtl=rtl, page_number=page.page_number)
+    ]
+
+
+def _table_details_on_page(
+    page, *, rtl: bool, page_number: int
+) -> list[ExtractedTable]:
     vertical, horizontal = _rules_from_page(page)
     grids = _grids(vertical, horizontal)
-    rendered: list[tuple[tuple[float, float, float, float], list[list[str]]]] = []
+    rendered: list[ExtractedTable] = []
     for grid in grids:
         bbox, rows = _render_grid(page, grid, rtl)
         if rows:
-            rendered.append((bbox, rows))
-    ruled_boxes = [bbox for bbox, _ in rendered]
+            rendered.append(ExtractedTable(rows, page_number, bbox, "ruled"))
+    ruled_boxes = [table.bbox for table in rendered]
     for region in _text_regions(page, ruled_boxes):
-        rendered.extend(_borderless_tables(region, rtl=rtl))
+        for bbox, rows in _borderless_tables(region, rtl=rtl):
+            rendered.append(ExtractedTable(rows, page_number, bbox, "text"))
     return rendered
 
 

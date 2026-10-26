@@ -93,6 +93,9 @@ for df in dfs:
     print(df)
 ```
 
+See the [structured Python API](docs/api.md) for raw rows, page and table metadata,
+page selection, cropping, headerless tables, and numeric/dtype control.
+
 ## English and Farsi examples
 
 The repository includes [13 generated example PDFs](examples/README.md), including
