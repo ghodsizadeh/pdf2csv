@@ -1,6 +1,10 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "pdf2csv"
-version = "0.3.0"
+version = "0.3.0rc1"
 description = "A python library and CLI tool to convert PDF tables to CSV or Excel files."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -11,7 +15,7 @@ dependencies = [
     "pdfplumber>=0.11.7",
     "typer>=0.12.5",
 ]
-license = { text = "MIT License" }
+license = "MIT"
 keywords = [
     "pdf",
     "csv",
@@ -23,7 +27,6 @@ keywords = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -57,6 +60,9 @@ examples = [
 
 [tool.uv]
 package = true
+
+[tool.setuptools]
+packages = ["pdf2csv"]
 
 [tool.ruff]
 target-version = "py312"
