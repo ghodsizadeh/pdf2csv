@@ -89,8 +89,9 @@ frames = convert(
 - Raw `table.rows` precede header/numeric/dtype conversion but already include
   extraction cleanup. `table.dataframe` contains converted data.
 - Tables include `page_number`, `bbox`, `method` ("ruled" or "text"), and warnings.
-  Warnings such as `no_tables`, `empty_header`, and `duplicate_header` are
-  observations, not confidence scores or completeness guarantees.
+  `ambiguous_header` and `schema_change` require reviewing the affected output;
+  column labels may not apply to all rows. `convert()` and the CLI log table
+  warnings. These are observations, not completeness guarantees.
 
 ## Limits and RTL
 

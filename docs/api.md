@@ -34,6 +34,18 @@ extraction cleanup, including joined header bands, normalized whitespace and
 removed empty rows/columns; they are not a record of every original PDF glyph.
 Changing a DataFrame does not change its table's raw rows.
 
+Ruled tables use the physical cell boundaries, including partial row separators.
+Row-spanning labels are repeated across their covered output rows; body text
+spanning columns is emitted once in the leftmost covered column. Partial
+subcolumns are retained, so a shared header can produce duplicate labels.
+Full-width leading titles and trailing annotation bands are excluded. Stacked
+headers are joined when there is evidence of the data boundary; otherwise rows
+remain separate and receive an `ambiguous_header` warning. Different sections
+within one connected grid are not automatically split into separate schemas;
+repeated section headers remain rows.
+These rules are geometric cleanup, not semantic interpretation of arbitrary
+merged cells. Validate nested or irregular layouts against the PDF.
+
 ## Page selection and crops
 
 ```python
@@ -93,9 +105,14 @@ dtype mapping applies to every table, so heterogeneous tables may be easier to
 convert individually from `rows`.
 
 Warnings report observed conditions: `no_tables` for a selected page/crop with no
-detected tables, `empty_header` for generated labels, and `duplicate_header` for
-duplicate final labels. They do not estimate confidence or claim that every table
-was detected. Existing extraction limitations still apply.
+detected tables, `empty_header` for generated labels, `duplicate_header` for
+duplicate final labels, `ambiguous_header` for uncertain grouped headers, and
+`schema_change` when repeated headers or changing column value types suggest
+different sections. For `schema_change`, column labels may be wrong for some rows;
+review the source before using them. These heuristics can miss changes or produce
+false alarms. They do not estimate confidence or claim that every table was detected.
+`convert()` logs table warnings, and the CLI shows them with table and page numbers;
+page-level `no_tables` warnings are available through `extract_document()`.
 
 ## DataFrame wrapper and exports
 

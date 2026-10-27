@@ -12,6 +12,24 @@ from pdf2csv.cli import app
 ROOT = Path(__file__).parents[1]
 
 
+@pytest.mark.parametrize(
+    "filename,warning",
+    [
+        ("schema_change.pdf", "schema_change"),
+        ("ambiguous_grouped_header.pdf", "ambiguous_header"),
+        ("partial_rules_rowspan.pdf", "duplicate_header"),
+    ],
+)
+def test_cli_reports_table_warnings(filename, warning, tmp_path, caplog):
+    result = CliRunner().invoke(
+        app, ["convert", str(ROOT / "examples" / filename), "-o", str(tmp_path)]
+    )
+    assert result.exit_code == 0, result.output
+    assert warning in caplog.text
+    assert "page" in caplog.text
+    assert list(tmp_path.glob("*.csv"))
+
+
 @pytest.mark.parametrize("filename", ["missing.pdf", "encrypted.pdf"])
 def test_bad_input_exits_nonzero(filename, tmp_path, caplog):
     result = CliRunner().invoke(

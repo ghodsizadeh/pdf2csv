@@ -113,6 +113,15 @@ def convert(
         max_bytes=max_bytes,
         max_pages=max_pages,
     )
+    for number, table in enumerate(result.tables, 1):
+        for warning in table.warnings:
+            _log.warning(
+                "Table %s (page %s): %s: %s",
+                number,
+                table.page_number,
+                warning.code,
+                warning.message,
+            )
     frames = [table.dataframe for table in result.tables]
     if not frames:
         _log.warning("No tables were found in %s. Returning empty list.", result.source)
