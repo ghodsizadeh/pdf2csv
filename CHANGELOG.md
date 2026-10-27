@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.3.0rc2
+
+Second release candidate of the offline extractor. Validate output against your
+source PDFs, especially tables that report header or schema warnings.
+
 - Distinguish visible rules from unstroked cell/text backgrounds in Word PDFs;
   use tighter stroke snapping and connected strokes to retain partial row rules.
 - Read 90°, 180° and 270° cell text from glyph matrices, preserving Farsi and

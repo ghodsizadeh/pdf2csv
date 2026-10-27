@@ -42,18 +42,13 @@ Scanned pages and other image-only PDFs are not supported. Those files have no t
 
 Requires Python 3.12+.
 
-```sh
-pip install pdf2csv
-```
-
-The offline rewrite is being prepared as `0.3.0rc1`. Once published, opt into
-the candidate explicitly:
+The offline rewrite is available as a release candidate. Opt into it explicitly:
 
 ```sh
-pip install pdf2csv==0.3.0rc1
+pip install pdf2csv==0.3.0rc2
 ```
 
-Until then, install the checkout instead:
+Or install the checkout:
 
 ```sh
 pip install .
@@ -73,7 +68,7 @@ In your consuming project's directory, add pdf2csv to its dependencies and insta
 it into the project's environment before discovering skills:
 
 ```sh
-uv add pdf2csv
+uv add 'pdf2csv==0.3.0rc2'
 uvx library-skills
 ```
 
@@ -90,9 +85,8 @@ Library Skills is an optional setup tool, not a pdf2csv runtime dependency.
 An isolated `uvx pdf2csv` invocation alone does not install pdf2csv in your
 project's environment for skill discovery.
 
-**Before this change is published**, install this checkout into your consuming
-project's environment instead of expecting the skill in an older PyPI release.
-You can inspect discovery without installing links with
+Older PyPI releases do not include the same skill or API. You can inspect discovery
+without installing links with
 `uvx library-skills scan --json`.
 
 **For agents:** load the installed `pdf2csv/SKILL.md` from your configured skills
@@ -125,13 +119,13 @@ for input limits and `--fail-on-empty`.
 ## With uvx
 
 ```sh
-uvx pdf2csv convert <pdf_path> --output-dir <output_dir> --output-format <csv|xlsx> --rtl --verbose
+uvx --from pdf2csv==0.3.0rc2 pdf2csv convert <pdf_path> --output-dir <output_dir> --output-format <csv|xlsx> --rtl --verbose
 ```
 
 Example:
 
 ```sh
-uvx pdf2csv convert example.pdf --output-dir ./output --output-format xlsx --rtl --verbose
+uvx --from pdf2csv==0.3.0rc2 pdf2csv convert example.pdf --output-dir ./output --output-format xlsx --rtl --verbose
 ```
 
 ## Python Usage

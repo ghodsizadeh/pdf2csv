@@ -5,7 +5,7 @@ Use `convert` to extract each detected table to a separate CSV or Excel file:
 ```sh
 pdf2csv convert report.pdf -o output
 pdf2csv convert report.pdf -o output -f xlsx
-uvx pdf2csv convert report.pdf -o output
+uvx --from pdf2csv==0.3.0rc2 pdf2csv convert report.pdf -o output
 ```
 
 `convert-cli` remains an alias with the same arguments and behavior. Run
