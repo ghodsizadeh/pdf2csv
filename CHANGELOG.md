@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.3.0
+
+First stable release of the offline extractor introduced in 0.3.0rc1 and
+improved in 0.3.0rc2. See the release candidate entries below for changes and
+migration considerations. Review extracted tables against their sources: in
+particular, connected grids can contain multiple schemas, and a schema warning
+means column labels may not apply to every row. Duplicate headers, complex
+right-to-left text, borderless layouts, and scanned PDFs remain limitations.
+
 ## 0.3.0rc2
 
 Second release candidate of the offline extractor. Validate output against your

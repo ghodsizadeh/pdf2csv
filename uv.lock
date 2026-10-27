@@ -576,7 +576,7 @@ wheels = [
 
 [[package]]
 name = "pdf2csv"
-version = "0.3.0rc2"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },

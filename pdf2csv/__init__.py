@@ -1,6 +1,6 @@
 """pdf2csv - Extract tables from PDF files into CSV or Excel."""
 
-__version__ = "0.3.0rc2"
+__version__ = "0.3.0"
 
 from pdf2csv.converter import convert, export_frames, extract_document
 from pdf2csv.errors import Pdf2CsvError
