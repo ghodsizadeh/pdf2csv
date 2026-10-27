@@ -7,7 +7,7 @@ pdf2csv = [".agents/skills/*/SKILL.md"]
 
 [project]
 name = "pdf2csv"
-version = "0.3.0rc1"
+version = "0.3.0rc2"
 description = "A python library and CLI tool to convert PDF tables to CSV or Excel files."
 readme = "README.md"
 requires-python = ">=3.12"
