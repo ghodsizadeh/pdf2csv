@@ -26,6 +26,12 @@ Files use the input stem and a table number, such as `report-table-1.csv` and
 `report-table-2.csv`. The CLI omits the dataframe index. Each detected table is
 written independently; tables continued across pages are not combined.
 
+Table warnings are logged with the output table number and source page. In
+particular, `schema_change` means column labels may not apply to every row, and
+`ambiguous_header` means uncertain header rows were retained as data. Review
+warned output against the PDF. Warnings do not prevent export or guarantee that
+other problems were detected.
+
 Existing destinations are protected by default. After extracting the tables,
 the CLI checks every planned destination before writing any files. An existing
 file, directory, or symlink at one of those destinations causes an error;

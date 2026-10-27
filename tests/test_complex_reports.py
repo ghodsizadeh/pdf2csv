@@ -8,7 +8,7 @@ import pdfplumber
 import pytest
 
 from pdf2csv import convert, extract_document
-from pdf2csv.extract import _cluster, _text_in_box
+from pdf2csv.extract import _cluster, _has_schema_change, _text_in_box
 
 EXAMPLES = Path(__file__).parents[1] / "examples"
 
@@ -97,3 +97,57 @@ def test_real_borderless_tables_need_not_contain_numbers():
 def test_rule_snapping_does_not_chain_across_neighboring_positions():
     rules = _cluster([(40, 10, 60), (41, 10, 60), (42, 10, 60)])
     assert len(rules) == 2
+
+
+@pytest.mark.parametrize("header", [None, 0])
+def test_ambiguous_grouped_header_does_not_consume_first_data_row(header):
+    table = extract_document(
+        EXAMPLES / "ambiguous_grouped_header.pdf", header=header, numeric="preserve"
+    ).tables[0]
+    assert table.rows == [
+        ["Group A", "Group A", "Group B", "Group B"],
+        ["A1", "B1", "C1", "D1"],
+        ["A2", "B2", "C2", "D2"],
+        ["A3", "B3", "C3", "D3"],
+    ]
+    assert table.dataframe.iloc[0].tolist() == (
+        table.rows[0] if header is None else table.rows[1]
+    )
+    assert "ambiguous_header" in [w.code for w in table.warnings]
+
+
+def test_schema_change_is_reported_without_discarding_rows():
+    table = extract_document(EXAMPLES / "schema_change.pdf", numeric="preserve").tables[
+        0
+    ]
+    assert table.rows[3] == ["1000", "Thermal", "Capacity"]
+    assert table.rows[-1] == ["3000", "Generation", "Energy"]
+    assert [w.code for w in table.warnings] == ["schema_change"]
+
+
+def test_schema_change_detects_shift_in_column_types_and_repeated_headers():
+    assert _has_schema_change(
+        [
+            ["Share", "Amount", "Category"],
+            ["20", "400", "Steam"],
+            ["30", "600", "Gas"],
+            ["1000", "Thermal", "Capacity"],
+            ["2000", "Hydro", "Capacity"],
+        ]
+    )
+    assert _has_schema_change(
+        [
+            ["Share", "Amount", "Category"],
+            ["20", "400", "Steam"],
+            ["Share", "Amount", "New category"],
+            ["30", "600", "Gas"],
+        ]
+    )
+    assert not _has_schema_change(
+        [
+            ["Share", "Amount", "Category"],
+            ["20", "400", "Steam"],
+            ["30", "600", "Gas"],
+            ["40", "800", "Hydro"],
+        ]
+    )

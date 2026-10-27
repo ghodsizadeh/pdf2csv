@@ -339,6 +339,41 @@ def complex_report_examples():
             text(pdf, x, 100 + 30 * i, value)
     pdf.save()
 
+    pdf = new("ambiguous_grouped_header.pdf")
+    xs, ys = [50, 150, 250, 350, 450], [80, 110, 140, 170, 200]
+    for y in ys:
+        h(pdf, xs[0], xs[-1], y)
+    for x in [50, 250, 450]:
+        v(pdf, x, ys[0], ys[-1])
+    for x in [150, 350]:
+        v(pdf, x, ys[1], ys[-1])
+    text(pdf, 150, 95, "Group A")
+    text(pdf, 350, 95, "Group B")
+    for top, row in zip(
+        [125, 155, 185],
+        [
+            ["A1", "B1", "C1", "D1"],
+            ["A2", "B2", "C2", "D2"],
+            ["A3", "B3", "C3", "D3"],
+        ],
+    ):
+        for value, left, right in zip(row, xs, xs[1:]):
+            text(pdf, (left + right) / 2, top, value)
+    pdf.save()
+
+    pdf = new("schema_change.pdf")
+    rows = [
+        ["Share", "Amount", "Category"],
+        ["20", "400", "Steam"],
+        ["30", "600", "Gas"],
+        ["1000", "Thermal", "Capacity"],
+        ["2000", "Hydro", "Capacity"],
+        ["Value", "Description", "Category"],
+        ["3000", "Generation", "Energy"],
+    ]
+    draw_table(pdf, rows)
+    pdf.save()
+
 
 if __name__ == "__main__":
     english_examples()

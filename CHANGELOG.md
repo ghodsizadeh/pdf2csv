@@ -11,6 +11,8 @@
 - Separate decorative page frames from tables that touch them, and require
   borderless column separators to pass through whitespace. The latter is a
   conservative precision tradeoff for sparse/spanning borderless layouts.
+- Preserve ambiguous grouped-header rows and warn when column contents suggest
+  a schema change. Log table warnings from `convert()` and the CLI.
 
 ## 0.3.0rc1
 

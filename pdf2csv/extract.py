@@ -218,9 +218,26 @@ def _table_details_on_page(
     grids = _grids(vertical, horizontal)
     rendered: list[ExtractedTable] = []
     for grid in grids:
-        bbox, rows = _render_grid(page, grid, rtl)
+        bbox, rows, ambiguous_header = _render_grid(page, grid, rtl)
         if rows:
-            rendered.append(ExtractedTable(rows, page_number, bbox, "ruled"))
+            table = ExtractedTable(rows, page_number, bbox, "ruled")
+            if ambiguous_header:
+                table.warnings.append(
+                    ExtractionWarning(
+                        "ambiguous_header",
+                        "A grouped header may span additional rows; those rows were retained as data. Review against the PDF.",
+                        page_number,
+                    )
+                )
+            if _has_schema_change(rows):
+                table.warnings.append(
+                    ExtractionWarning(
+                        "schema_change",
+                        "Column contents or a repeated header suggest that this table changes schema. Review against the PDF before using the column labels.",
+                        page_number,
+                    )
+                )
+            rendered.append(table)
     ruled_boxes = [table.bbox for table in rendered]
     for region in _text_regions(page, ruled_boxes):
         for bbox, rows in _borderless_tables(region, rtl=rtl):
@@ -344,7 +361,7 @@ def _render_grid(
     page,
     grid: _Grid,
     rtl: bool,
-) -> tuple[tuple[float, float, float, float], list[list[str]]]:
+) -> tuple[tuple[float, float, float, float], list[list[str]], bool]:
     # Ignore a full-width title/blank band before the column labels. Combine
     # genuinely stacked column headers until most leaf columns are separated.
     start = 0
@@ -358,6 +375,23 @@ def _render_grid(
         ):
             break
         stop += 1
+    ambiguous_header = False
+    if stop > start:
+        candidate = _band_values(page, grid, *bands[stop], rtl)
+        following = (
+            _band_values(page, grid, *bands[stop + 1], rtl)
+            if stop + 1 < len(bands)
+            else []
+        )
+        evidence = sum(
+            bool(a) and not _numeric_token(a) and _numeric_token(b)
+            for a, b in zip(candidate, following)
+        )
+        if evidence < min(2, len(candidate)):
+            # Geometry alone cannot tell a subheader from the first data row.
+            # Preserve uncertain rows and let the caller review them.
+            stop = start
+            ambiguous_header = True
     top, bottom = bands[start][0], bands[stop][1]
     header = _headers(page, grid, rtl, top=top, bottom=bottom)
     rows = [header]
@@ -375,7 +409,43 @@ def _render_grid(
                 "" if box[0] < left - _RULE_SNAP else _text_in_box(page, *box, rtl)
             )
         rows.append(row)
-    return grid.bbox, _drop_empty(rows)
+    return grid.bbox, _drop_empty(rows), ambiguous_header
+
+
+def _band_values(page, grid, top, bottom, rtl):
+    return [
+        _text_in_box(page, left, top, right, bottom, rtl)
+        for left, right in zip(grid.xs, grid.xs[1:])
+    ]
+
+
+def _numeric_token(value):
+    value = value.strip().replace("−", "-").replace(",", "")
+    if not value:
+        return False
+    try:
+        return math.isfinite(float(value))
+    except ValueError:
+        return False
+
+
+def _has_schema_change(rows):
+    """Flag observable schema changes without claiming to infer their meaning."""
+    if len(rows) < 4:
+        return False
+    header = rows[0]
+    for row in rows[1:]:
+        matches = sum(bool(a) and a == b for a, b in zip(header, row))
+        if matches >= 2:
+            return True
+    for column in zip(*rows[1:]):
+        kinds = [_numeric_token(value) for value in column if value.strip()]
+        for index in range(2, len(kinds) - 1):
+            if kinds[index - 2 : index] == [True, True] and kinds[
+                index : index + 2
+            ] == [False, False]:
+                return True
+    return False
 
 
 def _cell_box(grid, x, y):

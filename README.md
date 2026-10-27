@@ -154,7 +154,7 @@ page selection, cropping, headerless tables, and numeric/dtype control.
 
 ## English and Farsi examples
 
-The repository includes [23 generated example PDFs](examples/README.md), including
+The repository includes [25 generated example PDFs](examples/README.md), including
 shaped Farsi with embedded fonts, mixed digit scripts, multiple tables and pages:
 
 ```sh
@@ -173,9 +173,12 @@ Quarter-turn text is read using its glyph transformation matrix, including
 rotated numeric cells. Shaded backgrounds are not treated as ruled borders.
 Ruled cells spanning rows repeat their labels in each corresponding output row;
 cells spanning columns keep their body text in the leftmost covered column.
-Stacked headers are joined, while full-width leading titles and trailing notes
-are excluded. Partial internal dividers can yield duplicate column labels; the
-structured API reports `duplicate_header` warnings for these tables.
+Stacked headers are joined when the data boundary is evident; uncertain rows are
+retained and flagged. Full-width leading titles and trailing notes are excluded.
+Partial internal dividers can yield duplicate column labels. The CLI logs table
+warnings, including ambiguous headers and possible schema changes; a warned CSV
+may need manual correction against the PDF. These checks are heuristic and may miss
+problems. The structured API exposes warning codes and source locations.
 
 Borderless detection requires column separators to pass through whitespace and
 rejects widely separated text bands. This reduces prose/cover false positives,
