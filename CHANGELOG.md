@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## 0.3.1
+
+### Fixed
+
+- Validate `convert()`'s `output_format` before extraction even when `output_dir`
+  is omitted or `None`. Unsupported formats now raise `Pdf2CsvError` instead of
+  being silently ignored. Supported `csv` and `xlsx` formats are unchanged. (#18)
+
+### Documentation
+
+- Update installation and CLI examples to the stable 0.3.1 release.
+
 ## 0.3.0
 
 First stable release of the offline extractor introduced in 0.3.0rc1 and
