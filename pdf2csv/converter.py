@@ -99,7 +99,7 @@ def convert(
     CSV/Excel headers independently of extraction's ``table_header`` option.
     """
     started = time.time()
-    if output_dir is not None and output_format not in _OUTPUT_FORMATS:
+    if output_format not in _OUTPUT_FORMATS:
         raise Pdf2CsvError(f"Unsupported output format: {output_format}")
     writer_kwargs = _export_options(export_kwargs, kwargs)
     result = extract_document(
