@@ -42,10 +42,10 @@ Scanned pages and other image-only PDFs are not supported. Those files have no t
 
 Requires Python 3.12+.
 
-The offline rewrite is available as a release candidate. Opt into it explicitly:
+Install the stable offline extractor:
 
 ```sh
-pip install pdf2csv==0.3.0rc2
+pip install pdf2csv==0.3.1
 ```
 
 Or install the checkout:
@@ -68,7 +68,7 @@ In your consuming project's directory, add pdf2csv to its dependencies and insta
 it into the project's environment before discovering skills:
 
 ```sh
-uv add 'pdf2csv==0.3.0rc2'
+uv add 'pdf2csv==0.3.1'
 uvx library-skills
 ```
 
@@ -119,13 +119,13 @@ for input limits and `--fail-on-empty`.
 ## With uvx
 
 ```sh
-uvx --from pdf2csv==0.3.0rc2 pdf2csv convert <pdf_path> --output-dir <output_dir> --output-format <csv|xlsx> --rtl --verbose
+uvx --from pdf2csv==0.3.1 pdf2csv convert <pdf_path> --output-dir <output_dir> --output-format <csv|xlsx> --rtl --verbose
 ```
 
 Example:
 
 ```sh
-uvx --from pdf2csv==0.3.0rc2 pdf2csv convert example.pdf --output-dir ./output --output-format xlsx --rtl --verbose
+uvx --from pdf2csv==0.3.1 pdf2csv convert example.pdf --output-dir ./output --output-format xlsx --rtl --verbose
 ```
 
 ## Python Usage
